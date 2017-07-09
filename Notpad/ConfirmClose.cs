@@ -10,9 +10,9 @@ using System.Windows.Forms;
 
 namespace Notpad.Client
 {
-	public partial class CloseConfirm : Form
+	public partial class ConfirmClose : Form
 	{
-		public CloseConfirm()
+		public ConfirmClose()
 		{
 			InitializeComponent();
 		}

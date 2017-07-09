@@ -26,5 +26,13 @@ namespace Notpad.Client
 			else
 				action();
 		}
+
+		public static byte[] CheckEndianness(this byte[] buffer)
+		{
+			if (BitConverter.IsLittleEndian)
+				return buffer.Reverse().ToArray();
+			else
+				return buffer;
+		}
 	}
 }

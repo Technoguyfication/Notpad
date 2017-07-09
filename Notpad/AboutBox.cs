@@ -10,9 +10,11 @@ using System.Windows.Forms;
 
 namespace Notpad.Client
 {
-	public partial class About : Form
+	public partial class AboutBox : Form
 	{
-		public About()
+		public static string githubLink = "https://github.com/Technoguyfication/Notpad";
+
+		public AboutBox()
 		{
 			InitializeComponent();
 		}
@@ -25,11 +27,12 @@ namespace Notpad.Client
 		private void WindowLoaded(object sender, EventArgs e)
 		{
 			versionLabel.Text = string.Format(versionLabel.Text, Application.ProductVersion, Environment.OSVersion.VersionString);
+			aboutLabel.Text = string.Format(aboutLabel.Text, githubLink);
 		}
 
 		private void GithubButtonClick(object sender, EventArgs e)
 		{
-			System.Diagnostics.Process.Start("https://github.com/Technoguyfication/Notpad");
+			System.Diagnostics.Process.Start(githubLink);
 		}
 	}
 }

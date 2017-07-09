@@ -1,6 +1,6 @@
 ﻿namespace Notpad.Client
 {
-	partial class CloseConfirm
+	partial class ConfirmClose
 	{
 		/// <summary>
 		/// Required designer variable.

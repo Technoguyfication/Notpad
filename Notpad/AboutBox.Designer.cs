@@ -1,6 +1,6 @@
 ﻿namespace Notpad.Client
 {
-	partial class About
+	partial class AboutBox
 	{
 		/// <summary>
 		/// Required designer variable.
@@ -28,13 +28,13 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
-			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(About));
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AboutBox));
 			this.notpadLabel = new System.Windows.Forms.Label();
 			this.horizontalDivider = new System.Windows.Forms.Label();
 			this.authorLabel = new System.Windows.Forms.Label();
 			this.versionLabel = new System.Windows.Forms.Label();
 			this.copyrightLabel = new System.Windows.Forms.Label();
-			this.label1 = new System.Windows.Forms.Label();
+			this.aboutLabel = new System.Windows.Forms.Label();
 			this.okButton = new System.Windows.Forms.Button();
 			this.logoBox = new System.Windows.Forms.PictureBox();
 			this.githubButton = new System.Windows.Forms.Button();
@@ -91,15 +91,15 @@
 			this.copyrightLabel.TabIndex = 2;
 			this.copyrightLabel.Text = "© 2017 Technoguyfication. Unlicense.";
 			// 
-			// label1
+			// aboutLabel
 			// 
-			this.label1.AutoSize = true;
-			this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.label1.Location = new System.Drawing.Point(54, 168);
-			this.label1.Name = "label1";
-			this.label1.Size = new System.Drawing.Size(349, 91);
-			this.label1.TabIndex = 2;
-			this.label1.Text = resources.GetString("label1.Text");
+			this.aboutLabel.AutoSize = true;
+			this.aboutLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.aboutLabel.Location = new System.Drawing.Point(54, 168);
+			this.aboutLabel.Name = "aboutLabel";
+			this.aboutLabel.Size = new System.Drawing.Size(349, 91);
+			this.aboutLabel.TabIndex = 2;
+			this.aboutLabel.Text = resources.GetString("aboutLabel.Text");
 			// 
 			// okButton
 			// 
@@ -141,7 +141,7 @@
 			this.Controls.Add(this.githubButton);
 			this.Controls.Add(this.logoBox);
 			this.Controls.Add(this.okButton);
-			this.Controls.Add(this.label1);
+			this.Controls.Add(this.aboutLabel);
 			this.Controls.Add(this.copyrightLabel);
 			this.Controls.Add(this.versionLabel);
 			this.Controls.Add(this.authorLabel);
@@ -167,7 +167,7 @@
 		private System.Windows.Forms.Label authorLabel;
 		private System.Windows.Forms.Label versionLabel;
 		private System.Windows.Forms.Label copyrightLabel;
-		private System.Windows.Forms.Label label1;
+		private System.Windows.Forms.Label aboutLabel;
 		private System.Windows.Forms.Button okButton;
 		private System.Windows.Forms.PictureBox logoBox;
 		private System.Windows.Forms.Button githubButton;

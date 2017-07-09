@@ -20,7 +20,7 @@ namespace Notpad.Client
 			InitializeComponent();
 		}
 
-		private void SetTitle(string title)
+		public void SetTitle(string title)
 		{
 			Text = $"{title} - Notpad";
 		}
@@ -124,7 +124,7 @@ namespace Notpad.Client
 		{
 			if (e.CloseReason == CloseReason.UserClosing)
 			{
-				CloseConfirm unsavedChanges = new CloseConfirm();
+				ConfirmClose unsavedChanges = new ConfirmClose();
 				DialogResult result = unsavedChanges.ShowDialog(this);
 				if (result == DialogResult.Cancel)
 					e.Cancel = true;
@@ -159,7 +159,7 @@ namespace Notpad.Client
 
 		private void AboutMenuItemClick(object sender, EventArgs e)
 		{
-			new About().ShowDialog();
+			new AboutBox().ShowDialog();
 		}
 
 		private void RTLChanged(RightToLeft rtl)
