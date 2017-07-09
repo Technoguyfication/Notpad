@@ -18,5 +18,13 @@ namespace Notpad.Client
 			Application.SetCompatibleTextRenderingDefault(false);
 			Application.Run(new Notpad());
 		}
+
+		public static void InvokeIfRequired(this Control control, MethodInvoker action)
+		{
+			if (control.InvokeRequired)
+				control.Invoke(action);
+			else
+				action();
+		}
 	}
 }

@@ -13,6 +13,8 @@ namespace Notpad.Client
 {
 	public partial class Notpad : Form
 	{
+		public int MaxLines = 50;
+
 		public Notpad()
 		{
 			InitializeComponent();
@@ -76,6 +78,8 @@ namespace Notpad.Client
 			mainTextBox.WordWrap = RegSettings.WordWrap;
 			wordWrapMenuItem.Checked = mainTextBox.WordWrap;
 
+			SetFont(RegSettings.SelectedFont);
+
 			SetTitle(RandomFileName());
 		}
 
@@ -89,8 +93,14 @@ namespace Notpad.Client
 			if (result == DialogResult.OK)
 			{
 				RegSettings.SelectedFont = dialog.Font;
-				mainTextBox.Font = dialog.Font;
+				SetFont(dialog.Font);
 			}
+		}
+
+		private void SetFont(Font font)
+		{
+			mainTextBox.Font = font;
+			inputTextBox.Font = font;
 		}
 
 		private void WordWrapMenuItemClick(object sender, EventArgs e)
@@ -105,7 +115,7 @@ namespace Notpad.Client
 			RegSettings.WordWrap = value;
 		}
 
-		private void StatusBarMenuItemClick(object sender, EventArgs e)
+		private void ChangeTitleMenuItemClick(object sender, EventArgs e)
 		{
 			SetTitle(RandomFileName());
 		}
@@ -123,33 +133,60 @@ namespace Notpad.Client
 
 		private void MainTextBoxKeyDown(object sender, KeyEventArgs e)
 		{
-			if (e.KeyCode == Keys.Enter && !e.Control && !e.Shift)
+			e.SuppressKeyPress = true;	// suppress by default so we can't type into it
+			if (e.KeyCode == Keys.A && e.Modifiers == Keys.Control)	// ctrl+a
 			{
-				e.SuppressKeyPress = true;
-
-				int startOfLine = mainTextBox.GetFirstCharIndexOfCurrentLine();
-				if (startOfLine < 0)
-					startOfLine--;
-
-				int currentLineIndex = mainTextBox.GetLineFromCharIndex(startOfLine);
-				int endOfLine = mainTextBox.GetFirstCharIndexFromLine(currentLineIndex + 1);
-				if (endOfLine == -1)
-					endOfLine = mainTextBox.Text.Length;
-				else
-					endOfLine--;
-
-				mainTextBox.Text = mainTextBox.Text.Remove(startOfLine, endOfLine - startOfLine);
-
-				mainTextBox.Select(startOfLine, 0);
-			}
-			else if (e.KeyCode == Keys.A && e.Control && !e.Shift && !e.Alt)
-			{
-				/*int startIndex = mainTextBox.GetFirstCharIndexOfCurrentLine();
-				int endIndex = mainTextBox.GetFirstCharIndexFromLine(mainTextBox.GetLineFromCharIndex(startIndex) + 1) - 1;
-				mainTextBox.Select(startIndex, endIndex - startIndex);*/
 				mainTextBox.SelectAll();
 				e.SuppressKeyPress = true;
 			}
+			else if ((e.KeyData & Keys.Modifiers) != Keys.None)	// allow modifier keys through
+				e.SuppressKeyPress = false;
+		}
+
+		private void InputTextBoxKeyDown(object sender, KeyEventArgs e)
+		{
+			if (e.KeyCode == Keys.A && e.Modifiers == Keys.Control) // ctrl+a
+			{
+				inputTextBox.SelectAll();
+				e.SuppressKeyPress = true;
+			}
+			else if (e.KeyCode == Keys.Enter && e.Modifiers != (Keys.Shift | Keys.Control))
+			{
+				PrintString(inputTextBox.Text);
+				inputTextBox.Text = "";
+			}
+		}
+
+		private void AboutMenuItemClick(object sender, EventArgs e)
+		{
+			new About().ShowDialog();
+		}
+
+		private void RTLChanged(RightToLeft rtl)
+		{
+			mainTextBox.RightToLeft = inputTextBox.RightToLeft = rtl;
+		}
+
+		public void PrintString(string text, bool newline = true)
+		{
+			List<string> updatedLines = mainTextBox.Lines.ToList();
+
+			if (updatedLines.Count >= MaxLines)
+				updatedLines = (List<string>)updatedLines.Take(MaxLines - 1);
+
+			updatedLines.Add(text);
+
+			mainTextBox.Lines = updatedLines.ToArray();
+		}
+
+		private void ExitMenuItemClick(object sender, EventArgs e)
+		{
+			Close();
+		}
+
+		private void PrintMenuItemClick(object sender, EventArgs e)
+		{
+			PrintString("[Error] Printing doesn't work yet");
 		}
 	}
 }

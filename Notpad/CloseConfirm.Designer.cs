@@ -28,12 +28,14 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
+			this.components = new System.ComponentModel.Container();
 			this.highlightPanel = new System.Windows.Forms.Panel();
 			this.alsoCloseButton = new System.Windows.Forms.Button();
 			this.closeButton = new System.Windows.Forms.Button();
 			this.cancelButton = new System.Windows.Forms.Button();
 			this.infoLabel = new System.Windows.Forms.Label();
 			this.infoLabel2 = new System.Windows.Forms.Label();
+			this.basicToolTip = new System.Windows.Forms.ToolTip(this.components);
 			this.highlightPanel.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -58,6 +60,7 @@
 			this.alsoCloseButton.Size = new System.Drawing.Size(92, 23);
 			this.alsoCloseButton.TabIndex = 1;
 			this.alsoCloseButton.Text = "Also Close";
+			this.basicToolTip.SetToolTip(this.alsoCloseButton, "The same as \"Close\"\r\n\r\nThis only exists to keep UI consistency");
 			this.alsoCloseButton.UseVisualStyleBackColor = true;
 			this.alsoCloseButton.Click += new System.EventHandler(this.CloseButtonClick);
 			// 
@@ -69,6 +72,7 @@
 			this.closeButton.Size = new System.Drawing.Size(72, 23);
 			this.closeButton.TabIndex = 0;
 			this.closeButton.Text = "Close";
+			this.basicToolTip.SetToolTip(this.closeButton, "Close Notpad, terminating any open connection");
 			this.closeButton.UseVisualStyleBackColor = true;
 			this.closeButton.Click += new System.EventHandler(this.CloseButtonClick);
 			// 
@@ -81,6 +85,7 @@
 			this.cancelButton.Size = new System.Drawing.Size(72, 23);
 			this.cancelButton.TabIndex = 3;
 			this.cancelButton.Text = "Cancel";
+			this.basicToolTip.SetToolTip(this.cancelButton, "Don\'t close Notpad");
 			this.cancelButton.UseVisualStyleBackColor = true;
 			this.cancelButton.Click += new System.EventHandler(this.CancelButtonClick);
 			// 
@@ -106,7 +111,7 @@
 			this.infoLabel2.TabIndex = 2;
 			this.infoLabel2.Text = "...\\closing will disconnect you from any active...";
 			// 
-			// UnsavedChanges
+			// CloseConfirm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -119,7 +124,7 @@
 			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
 			this.MaximizeBox = false;
 			this.MinimizeBox = false;
-			this.Name = "UnsavedChanges";
+			this.Name = "CloseConfirm";
 			this.ShowIcon = false;
 			this.ShowInTaskbar = false;
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
@@ -138,5 +143,6 @@
 		private System.Windows.Forms.Button cancelButton;
 		private System.Windows.Forms.Label infoLabel;
 		private System.Windows.Forms.Label infoLabel2;
+		private System.Windows.Forms.ToolTip basicToolTip;
 	}
 }
