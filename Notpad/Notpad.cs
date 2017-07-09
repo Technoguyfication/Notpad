@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Notpad.Client.Util;
 
 namespace Notpad.Client
 {
@@ -80,8 +81,10 @@ namespace Notpad.Client
 
 		private void FontMenuItemClick(object sender, EventArgs e)
 		{
-			FontDialog dialog = new FontDialog();
-			dialog.Font = RegSettings.SelectedFont;
+			FontDialog dialog = new FontDialog()
+			{
+				Font = RegSettings.SelectedFont
+			};
 			DialogResult result = dialog.ShowDialog();
 			if (result == DialogResult.OK)
 			{
@@ -104,7 +107,18 @@ namespace Notpad.Client
 
 		private void StatusBarMenuItemClick(object sender, EventArgs e)
 		{
+			SetTitle(RandomFileName());
+		}
 
+		private void WindowClosing(object sender, FormClosingEventArgs e)
+		{
+			if (e.CloseReason == CloseReason.UserClosing)
+			{
+				CloseConfirm unsavedChanges = new CloseConfirm();
+				DialogResult result = unsavedChanges.ShowDialog(this);
+				if (result == DialogResult.Cancel)
+					e.Cancel = true;
+			}
 		}
 	}
 }

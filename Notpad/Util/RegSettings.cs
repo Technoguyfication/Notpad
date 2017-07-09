@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Notpad.Client
+namespace Notpad.Client.Util
 {
 	public static class RegSettings
 	{

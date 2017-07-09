@@ -104,7 +104,7 @@
 			// 
 			this.mainTextBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
 			this.mainTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.mainTextBox.Font = new System.Drawing.Font("Consolas", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.mainTextBox.Font = new System.Drawing.Font("Consolas", 11.25F);
 			this.mainTextBox.Location = new System.Drawing.Point(0, 0);
 			this.mainTextBox.Multiline = true;
 			this.mainTextBox.Name = "mainTextBox";
@@ -122,6 +122,7 @@
 			this.Menu = this.mainMenu;
 			this.Name = "Notpad";
 			this.Text = "Notpad";
+			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.WindowClosing);
 			this.Load += new System.EventHandler(this.WindowLoaded);
 			this.ResizeEnd += new System.EventHandler(this.WindowResized);
 			this.ResumeLayout(false);
