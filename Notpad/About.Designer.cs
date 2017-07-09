@@ -37,6 +37,7 @@
 			this.label1 = new System.Windows.Forms.Label();
 			this.okButton = new System.Windows.Forms.Button();
 			this.logoBox = new System.Windows.Forms.PictureBox();
+			this.githubButton = new System.Windows.Forms.Button();
 			((System.ComponentModel.ISupportInitialize)(this.logoBox)).BeginInit();
 			this.SuspendLayout();
 			// 
@@ -121,12 +122,23 @@
 			this.logoBox.TabIndex = 4;
 			this.logoBox.TabStop = false;
 			// 
+			// githubButton
+			// 
+			this.githubButton.Image = global::Notpad.Client.Properties.Resources.GitHub32;
+			this.githubButton.Location = new System.Drawing.Point(12, 310);
+			this.githubButton.Name = "githubButton";
+			this.githubButton.Size = new System.Drawing.Size(45, 45);
+			this.githubButton.TabIndex = 5;
+			this.githubButton.UseVisualStyleBackColor = true;
+			this.githubButton.Click += new System.EventHandler(this.GithubButtonClick);
+			// 
 			// About
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.CancelButton = this.okButton;
 			this.ClientSize = new System.Drawing.Size(444, 367);
+			this.Controls.Add(this.githubButton);
 			this.Controls.Add(this.logoBox);
 			this.Controls.Add(this.okButton);
 			this.Controls.Add(this.label1);
@@ -158,5 +170,6 @@
 		private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.Button okButton;
 		private System.Windows.Forms.PictureBox logoBox;
+		private System.Windows.Forms.Button githubButton;
 	}
 }

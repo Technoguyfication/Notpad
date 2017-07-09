@@ -26,5 +26,10 @@ namespace Notpad.Client
 		{
 			versionLabel.Text = string.Format(versionLabel.Text, Application.ProductVersion, Environment.OSVersion.VersionString);
 		}
+
+		private void GithubButtonClick(object sender, EventArgs e)
+		{
+			System.Diagnostics.Process.Start("https://github.com/Technoguyfication/Notpad");
+		}
 	}
 }

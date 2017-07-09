@@ -32,10 +32,12 @@
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Notpad));
 			this.mainMenu = new System.Windows.Forms.MainMenu(this.components);
 			this.fileMenuItem = new System.Windows.Forms.MenuItem();
-			this.menuItem1 = new System.Windows.Forms.MenuItem();
+			this.printMenuItem = new System.Windows.Forms.MenuItem();
 			this.fileMenuItemDivider = new System.Windows.Forms.MenuItem();
 			this.exitMenuItem = new System.Windows.Forms.MenuItem();
 			this.editMenuItem = new System.Windows.Forms.MenuItem();
+			this.clearTextMenuItem = new System.Windows.Forms.MenuItem();
+			this.timeDateMenuItem = new System.Windows.Forms.MenuItem();
 			this.formatMenuItem = new System.Windows.Forms.MenuItem();
 			this.wordWrapMenuItem = new System.Windows.Forms.MenuItem();
 			this.fontMenuItem = new System.Windows.Forms.MenuItem();
@@ -64,17 +66,17 @@
 			// 
 			this.fileMenuItem.Index = 0;
 			this.fileMenuItem.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
-            this.menuItem1,
+            this.printMenuItem,
             this.fileMenuItemDivider,
             this.exitMenuItem});
 			this.fileMenuItem.Text = "&File";
 			// 
-			// menuItem1
+			// printMenuItem
 			// 
-			this.menuItem1.Index = 0;
-			this.menuItem1.Shortcut = System.Windows.Forms.Shortcut.CtrlP;
-			this.menuItem1.Text = "Print...";
-			this.menuItem1.Click += new System.EventHandler(this.PrintMenuItemClick);
+			this.printMenuItem.Index = 0;
+			this.printMenuItem.Shortcut = System.Windows.Forms.Shortcut.CtrlP;
+			this.printMenuItem.Text = "Print...";
+			this.printMenuItem.Click += new System.EventHandler(this.PrintMenuItemClick);
 			// 
 			// fileMenuItemDivider
 			// 
@@ -90,7 +92,24 @@
 			// editMenuItem
 			// 
 			this.editMenuItem.Index = 1;
+			this.editMenuItem.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+            this.clearTextMenuItem,
+            this.timeDateMenuItem});
 			this.editMenuItem.Text = "&Edit";
+			// 
+			// clearTextMenuItem
+			// 
+			this.clearTextMenuItem.Index = 0;
+			this.clearTextMenuItem.Shortcut = System.Windows.Forms.Shortcut.CtrlDel;
+			this.clearTextMenuItem.Text = "Clear Text";
+			this.clearTextMenuItem.Click += new System.EventHandler(this.ClearTextMenuItemClick);
+			// 
+			// timeDateMenuItem
+			// 
+			this.timeDateMenuItem.Index = 1;
+			this.timeDateMenuItem.Shortcut = System.Windows.Forms.Shortcut.F5;
+			this.timeDateMenuItem.Text = "Time/Date";
+			this.timeDateMenuItem.Click += new System.EventHandler(this.TimeDateMenuItemClick);
 			// 
 			// formatMenuItem
 			// 
@@ -228,8 +247,10 @@
 		public System.Windows.Forms.TextBox inputTextBox;
 		private System.Windows.Forms.MenuItem fileMenuItemDivider;
 		private System.Windows.Forms.MenuItem exitMenuItem;
-		private System.Windows.Forms.MenuItem menuItem1;
+		private System.Windows.Forms.MenuItem printMenuItem;
 		private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
+		private System.Windows.Forms.MenuItem timeDateMenuItem;
+		private System.Windows.Forms.MenuItem clearTextMenuItem;
 	}
 }
 

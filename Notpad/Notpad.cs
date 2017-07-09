@@ -152,7 +152,7 @@ namespace Notpad.Client
 			}
 			else if (e.KeyCode == Keys.Enter && e.Modifiers != (Keys.Shift | Keys.Control))
 			{
-				PrintString(inputTextBox.Text);
+				PrintString(inputTextBox.Text.Trim());
 				inputTextBox.Text = "";
 			}
 		}
@@ -187,6 +187,16 @@ namespace Notpad.Client
 		private void PrintMenuItemClick(object sender, EventArgs e)
 		{
 			PrintString("[Error] Printing doesn't work yet");
+		}
+
+		private void TimeDateMenuItemClick(object sender, EventArgs e)
+		{
+			inputTextBox.Text += DateTime.Now.ToString();
+		}
+
+		private void ClearTextMenuItemClick(object sender, EventArgs e)
+		{
+			mainTextBox.Text = string.Empty;
 		}
 	}
 }
