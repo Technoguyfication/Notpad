@@ -120,5 +120,36 @@ namespace Notpad.Client
 					e.Cancel = true;
 			}
 		}
+
+		private void MainTextBoxKeyDown(object sender, KeyEventArgs e)
+		{
+			if (e.KeyCode == Keys.Enter && !e.Control && !e.Shift)
+			{
+				e.SuppressKeyPress = true;
+
+				int startOfLine = mainTextBox.GetFirstCharIndexOfCurrentLine();
+				if (startOfLine < 0)
+					startOfLine--;
+
+				int currentLineIndex = mainTextBox.GetLineFromCharIndex(startOfLine);
+				int endOfLine = mainTextBox.GetFirstCharIndexFromLine(currentLineIndex + 1);
+				if (endOfLine == -1)
+					endOfLine = mainTextBox.Text.Length;
+				else
+					endOfLine--;
+
+				mainTextBox.Text = mainTextBox.Text.Remove(startOfLine, endOfLine - startOfLine);
+
+				mainTextBox.Select(startOfLine, 0);
+			}
+			else if (e.KeyCode == Keys.A && e.Control && !e.Shift && !e.Alt)
+			{
+				/*int startIndex = mainTextBox.GetFirstCharIndexOfCurrentLine();
+				int endIndex = mainTextBox.GetFirstCharIndexFromLine(mainTextBox.GetLineFromCharIndex(startIndex) + 1) - 1;
+				mainTextBox.Select(startIndex, endIndex - startIndex);*/
+				mainTextBox.SelectAll();
+				e.SuppressKeyPress = true;
+			}
+		}
 	}
 }

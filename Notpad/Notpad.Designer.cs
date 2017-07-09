@@ -102,6 +102,8 @@
 			// 
 			// mainTextBox
 			// 
+			this.mainTextBox.AcceptsReturn = true;
+			this.mainTextBox.AcceptsTab = true;
 			this.mainTextBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
 			this.mainTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.mainTextBox.Font = new System.Drawing.Font("Consolas", 11.25F);
@@ -111,6 +113,7 @@
 			this.mainTextBox.ScrollBars = System.Windows.Forms.ScrollBars.Both;
 			this.mainTextBox.Size = new System.Drawing.Size(636, 296);
 			this.mainTextBox.TabIndex = 0;
+			this.mainTextBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainTextBoxKeyDown);
 			// 
 			// Notpad
 			// 
