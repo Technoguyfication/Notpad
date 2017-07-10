@@ -3,8 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using Notpad.Client.Net;
 
 namespace Notpad.Client.Util
 {
@@ -14,6 +16,7 @@ namespace Notpad.Client.Util
 			.CreateSubKey("Software")
 			.CreateSubKey("Technoguyfication")
 			.CreateSubKey("Notpad");
+		public static RegistryKey ServerKey = BaseKey.CreateSubKey("Servers");
 		public static int WindowSizeX
 		{
 			get
@@ -60,6 +63,48 @@ namespace Notpad.Client.Util
 			set
 			{
 				BaseKey.SetValue("Font", new FontConverter().ConvertToString(value));
+			}
+		}
+		public static Server[] Servers
+		{
+			get
+			{
+				string[] serverkeys = ServerKey.GetSubKeyNames();
+				List<Server> servers = new List<Server>();
+				for (int i = 0; i < serverkeys.Length; i++)
+				{
+					RegistryKey key = ServerKey.CreateSubKey(serverkeys[i]);
+					string _address = (string)key.GetValue("Address");
+					string _port = (string)key.GetValue("Port");
+					string name = (string)key.GetValue("Name");
+
+					if (_address == null || _port == null)
+						continue;
+
+					if (!IPAddress.TryParse(_address, out IPAddress address))
+						continue;
+
+					if (!ushort.TryParse(_port, out ushort port))
+						continue;
+
+					servers.Add(new Server { Address = address, Port = port, Name = name });
+				}
+
+				return servers.ToArray();
+			}
+			set
+			{
+				foreach (string subkey in ServerKey.GetSubKeyNames())
+					ServerKey.DeleteSubKeyTree(subkey, false);
+
+				foreach (Server server in value)
+				{
+					RegistryKey key = ServerKey.CreateSubKey(server.UniqueID);
+					key.SetValue("Address", server.Address.ToString());
+					key.SetValue("Port", server.Port.ToString());
+					if (!string.IsNullOrEmpty(server.Name))
+						key.SetValue("Name", server.Name);
+				}
 			}
 		}
 	}

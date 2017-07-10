@@ -38,20 +38,6 @@ namespace Notpad.Client.Net
 			CurrentState = ConnectionState.UNINITIALIZED;
 		}
 
-		new public void Connect(IPEndPoint endpoint)
-		{
-			try
-			{
-				base.Connect(endpoint);
-			}
-			catch (Exception e)
-			{
-				SendMessage($"Failed to connect to {endpoint.ToString()}: {e.Message}");
-				return;
-			}
-			SendMessage($"Connected to {endpoint.Address.ToString()}");
-		}
-
 		public void Disconnect()
 		{
 			try
@@ -64,6 +50,24 @@ namespace Notpad.Client.Net
 				SendMessage($"Error closing connection: {e.Message}");
 			}
 			ConnectionDisconnected?.Invoke(this, EventArgs.Empty);
+		}
+
+		public Server Query()
+		{
+			Write(GetQueryPacket());
+			Packet response = this.GetNextPacket();
+			List<byte> buffer = new List<byte>(response.Payload);
+			int serverNameLength = buffer.GetNextInt();
+			string serverName = Encoding.Unicode.GetString(buffer.GetBytes(serverNameLength));
+			int online = buffer.GetNextInt();
+			int maxOnline = buffer.GetNextInt();
+			return new Server()
+			{
+				Name = serverName,
+				Online = online,
+				MaxOnline = online,
+				Endpoint = (IPEndPoint)Client.RemoteEndPoint,
+			};
 		}
 
 		#region Packet Factory

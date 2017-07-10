@@ -32,7 +32,7 @@
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Notpad));
 			this.mainMenu = new System.Windows.Forms.MainMenu(this.components);
 			this.fileMenuItem = new System.Windows.Forms.MenuItem();
-			this.printMenuItem = new System.Windows.Forms.MenuItem();
+			this.connectMenuItem = new System.Windows.Forms.MenuItem();
 			this.fileMenuItemDivider = new System.Windows.Forms.MenuItem();
 			this.exitMenuItem = new System.Windows.Forms.MenuItem();
 			this.editMenuItem = new System.Windows.Forms.MenuItem();
@@ -66,17 +66,16 @@
 			// 
 			this.fileMenuItem.Index = 0;
 			this.fileMenuItem.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
-            this.printMenuItem,
+            this.connectMenuItem,
             this.fileMenuItemDivider,
             this.exitMenuItem});
 			this.fileMenuItem.Text = "&File";
 			// 
-			// printMenuItem
+			// connectMenuItem
 			// 
-			this.printMenuItem.Index = 0;
-			this.printMenuItem.Shortcut = System.Windows.Forms.Shortcut.CtrlP;
-			this.printMenuItem.Text = "Print...";
-			this.printMenuItem.Click += new System.EventHandler(this.PrintMenuItemClick);
+			this.connectMenuItem.Index = 0;
+			this.connectMenuItem.Text = "&Connect...";
+			this.connectMenuItem.Click += new System.EventHandler(this.ConnectMenuItemClick);
 			// 
 			// fileMenuItemDivider
 			// 
@@ -247,10 +246,10 @@
 		public System.Windows.Forms.TextBox inputTextBox;
 		private System.Windows.Forms.MenuItem fileMenuItemDivider;
 		private System.Windows.Forms.MenuItem exitMenuItem;
-		private System.Windows.Forms.MenuItem printMenuItem;
 		private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
 		private System.Windows.Forms.MenuItem timeDateMenuItem;
 		private System.Windows.Forms.MenuItem clearTextMenuItem;
+		private System.Windows.Forms.MenuItem connectMenuItem;
 	}
 }
 

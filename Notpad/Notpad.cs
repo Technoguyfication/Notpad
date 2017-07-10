@@ -16,10 +16,12 @@ namespace Notpad.Client
 	{
 		public int MaxLines = 50;
 		public NetClient Client;
+		public ConnectionWindow connectionWindow;
 
 		public Notpad()
 		{
 			InitializeComponent();
+			connectionWindow = new ConnectionWindow(this);
 		}
 
 		#region Network Interaction
@@ -192,11 +194,6 @@ namespace Notpad.Client
 			Close();
 		}
 
-		private void PrintMenuItemClick(object sender, EventArgs e)
-		{
-			PrintString("[Error] Printing doesn't work yet");
-		}
-
 		private void TimeDateMenuItemClick(object sender, EventArgs e)
 		{
 			inputTextBox.Text += DateTime.Now.ToString();
@@ -205,6 +202,11 @@ namespace Notpad.Client
 		private void ClearTextMenuItemClick(object sender, EventArgs e)
 		{
 			mainTextBox.Text = string.Empty;
+		}
+
+		private void ConnectMenuItemClick(object sender, EventArgs e)
+		{
+			connectionWindow.ShowDialog();
 		}
 	}
 }
