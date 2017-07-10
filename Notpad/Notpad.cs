@@ -8,17 +8,25 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Notpad.Client.Util;
+using Notpad.Client.Net;
 
 namespace Notpad.Client
 {
 	public partial class Notpad : Form
 	{
 		public int MaxLines = 50;
+		public NetClient Client;
 
 		public Notpad()
 		{
 			InitializeComponent();
 		}
+
+		#region Network Interaction
+
+
+
+		#endregion
 
 		public void SetTitle(string title)
 		{
@@ -133,13 +141,13 @@ namespace Notpad.Client
 
 		private void MainTextBoxKeyDown(object sender, KeyEventArgs e)
 		{
-			e.SuppressKeyPress = true;	// suppress by default so we can't type into it
-			if (e.KeyCode == Keys.A && e.Modifiers == Keys.Control)	// ctrl+a
+			e.SuppressKeyPress = true;  // suppress by default so we can't type into it
+			if (e.KeyCode == Keys.A && e.Modifiers == Keys.Control) // ctrl+a
 			{
 				mainTextBox.SelectAll();
 				e.SuppressKeyPress = true;
 			}
-			else if ((e.KeyData & Keys.Modifiers) != Keys.None)	// allow modifier keys through
+			else if ((e.KeyData & Keys.Modifiers) != Keys.None) // allow modifier keys through
 				e.SuppressKeyPress = false;
 		}
 

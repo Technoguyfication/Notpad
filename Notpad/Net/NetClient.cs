@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Notpad.Client.Util;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Notpad.Client.Net
 {
-	class NetClient : TcpClient
+	public class NetClient : TcpClient, IStreamable
 	{
 		public readonly object StreamReadLock = new object();
 		public readonly object StreamWriteLock = new object();
@@ -24,8 +25,12 @@ namespace Notpad.Client.Net
 
 		public ConnectionState CurrentState;
 
-		public delegate void MessageReceivedEventHandler(object sender, MessageReceivedEventArgs e);
-		public event MessageReceivedEventHandler MessageReceived;
+		public delegate void MessageEventHandler(object sender, MessageEventArgs e);
+		public event MessageEventHandler Message;
+		public event MessageEventHandler Notification;
+
+		public event EventHandler ConnectionEstablished;
+		public event EventHandler ConnectionDisconnected;
 
 		public NetClient(string username) : base()
 		{
@@ -33,36 +38,35 @@ namespace Notpad.Client.Net
 			CurrentState = ConnectionState.UNINITIALIZED;
 		}
 
-		private void HandlePacket(byte type, byte[] payload)
+		new public void Connect(IPEndPoint endpoint)
 		{
-			List<byte> payloadList = new List<byte>(payload);
-			switch (type)
+			try
 			{
-				case (byte)SCPackets.HANDSHAKE:
-					if (CurrentState == ConnectionState.UNINITIALIZED)
-						Write(GetIdentifyPacket(Username));
-					else
-					{
-
-					}
-					break;
-				case (byte)SCPackets.MESSAGE:
-					bool broadcast = BitConverter.ToBoolean(payloadList.GetByteInByteCollection().CheckEndianness(), 0);
-					int authorLength = payloadList.GetNextInt();
-					string author = Encoding.Unicode.GetString(payloadList.GetBytes(authorLength));
-					int messageLength = payloadList.GetNextInt();
-					string message = Encoding.Unicode.GetString(payloadList.GetBytes(messageLength));
-					MessageReceived?.Invoke(this, new MessageReceivedEventArgs(broadcast, author, message));
-					break;
+				base.Connect(endpoint);
 			}
+			catch (Exception e)
+			{
+				SendMessage($"Failed to connect to {endpoint.ToString()}: {e.Message}");
+				return;
+			}
+			SendMessage($"Connected to {endpoint.Address.ToString()}");
 		}
 
-		private void HandlePacket(byte[] buffer)
+		public void Disconnect()
 		{
-			HandlePacket(buffer[0], buffer.ToList().Skip(1).ToArray());
+			try
+			{
+				Stream.Close();
+				Disconnect();
+			}
+			catch (Exception e)
+			{
+				SendMessage($"Error closing connection: {e.Message}");
+			}
+			ConnectionDisconnected?.Invoke(this, EventArgs.Empty);
 		}
 
-		#region Packets
+		#region Packet Factory
 
 		public Packet GetQueryPacket()
 		{
@@ -94,11 +98,56 @@ namespace Notpad.Client.Net
 
 		#endregion
 
+		private void HandlePacket(byte type, byte[] payload)
+		{
+			List<byte> payloadList = new List<byte>(payload);
+			switch (type)
+			{
+				case (byte)SCPackets.HANDSHAKE:
+					if (CurrentState == ConnectionState.UNINITIALIZED)
+						Write(GetIdentifyPacket(Username));
+					else
+						SendMessage("Warning: Handshake packet received when client was not in ready state!");
+					break;
+				case (byte)SCPackets.MESSAGE:
+					if (CurrentState != ConnectionState.READY)
+						break;
+
+					bool broadcast = BitConverter.ToBoolean(payloadList.GetByteInByteCollection().CheckEndianness(), 0);
+					int authorLength = payloadList.GetNextInt();
+					string author = Encoding.Unicode.GetString(payloadList.GetBytes(authorLength));
+					int messageLength = payloadList.GetNextInt();
+					string message = Encoding.Unicode.GetString(payloadList.GetBytes(messageLength));
+					SendMessage((broadcast) ? $"[SERVER] {message}" : $"{author}: {message}");
+					break;
+				case (byte)SCPackets.READY:
+					if (CurrentState == ConnectionState.READY)
+						SendMessage("Warning: Server tried changing connection state to an invalid state.");
+					CurrentState = ConnectionState.READY;
+					ConnectionEstablished?.Invoke(this, EventArgs.Empty);
+					break;
+				case (byte)SCPackets.NOTIFICATION:
+
+					break;
+				default:
+					break;
+			}
+		}
+
+		private void HandlePacket(Packet packet)
+		{
+			HandlePacket(packet.PacketID, packet.Payload);
+		}
+
 		public void Read(byte[] buffer, int offset, int size)
 		{
 			lock (StreamReadLock)
 			{
-				Stream.Read(buffer, offset, size);
+				int bytesRead = Stream.Read(buffer, offset, size);
+				if (bytesRead == 0 && size != 0)
+				{
+					throw new DisconnectedException("Failed to read from network stream");
+				}
 			}
 		}
 
@@ -110,34 +159,46 @@ namespace Notpad.Client.Net
 			}
 		}
 
+		public void Write(byte[] buffer)
+		{
+			Write(buffer, 0, buffer.Length);
+		}
+
 		public void Write(Packet packet)
 		{
-			Write(packet.Raw, 0, packet.Length);
+			Write(packet.Raw);
+		}
+
+		private void SendMessage(string message)
+		{
+			Message?.Invoke(this, new MessageEventArgs(message));
+		}
+
+		private void SendNotification(string message)
+		{
+			Notification?.Invoke(this, new MessageEventArgs(message));
 		}
 	}
 }
 
-public class MessageReceivedEventArgs : EventArgs
+public class MessageEventArgs : EventArgs
 {
-	public bool Broadcast { get; set; }
-	public string Author { get; set; }
-	public string Message { get; set; }
-
-	public MessageReceivedEventArgs()
+	public string Content { get; set; }
+	public MessageEventArgs()
 	{
 
 	}
 
-	public MessageReceivedEventArgs(bool Broadcast, string Author, string Message)
+	public MessageEventArgs(string content)
 	{
-
+		Content = content;
 	}
 }
 
 public enum ConnectionState
 {
-	UNINITIALIZED,	// no handshake received
-	READY,			// client ready
+	UNINITIALIZED,  // no handshake received
+	READY,          // client ready
 }
 
 public enum CSPackets : byte
@@ -152,9 +213,20 @@ public enum CSPackets : byte
 public enum SCPackets : byte
 {
 	QUERY = 0xFF,
-	
+
 	HANDSHAKE = 0x00,
 	READY = 0x01,
 	MESSAGE = 0x02,
 	NOTIFICATION = 0x03,
+}
+
+[Serializable]
+public class DisconnectedException : Exception
+{
+	public DisconnectedException() { }
+	public DisconnectedException(string message) : base(message) { }
+	public DisconnectedException(string message, Exception inner) : base(message, inner) { }
+	protected DisconnectedException(
+	  System.Runtime.Serialization.SerializationInfo info,
+	  System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
 }

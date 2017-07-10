@@ -1,6 +1,9 @@
-﻿using System;
+﻿using Notpad.Client.Net;
+using Notpad.Client.Util;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -56,6 +59,20 @@ namespace Notpad.Client
 		public static int GetNextInt(this List<byte> bytes)
 		{
 			return BitConverter.ToInt32(bytes.GetBytes(4).CheckEndianness(), 0);
+		}
+
+		public static int GetNextInt(this IStreamable stream)
+		{
+			byte[] bytes = new byte[4];
+			return BitConverter.ToInt32(bytes.CheckEndianness(), 0);
+		}
+
+		public static Packet GetNextPacket(this IStreamable stream)
+		{
+			int length = stream.GetNextInt();
+			byte[] buffer = new byte[length];
+			stream.Read(buffer, 0, length);
+			return new Packet(buffer);
 		}
 	}
 }
