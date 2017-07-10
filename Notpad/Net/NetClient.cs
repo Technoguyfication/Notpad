@@ -22,16 +22,38 @@ namespace Notpad.Client.Net
 
 		public string Username { get; private set; }
 
+		public ConnectionState CurrentState;
+
+		public delegate void MessageReceivedEventHandler(object sender, MessageReceivedEventArgs e);
+		public event MessageReceivedEventHandler MessageReceived;
+
 		public NetClient(string username) : base()
 		{
 			Username = username;
+			CurrentState = ConnectionState.UNINITIALIZED;
 		}
 
 		private void HandlePacket(byte type, byte[] payload)
 		{
+			List<byte> payloadList = new List<byte>(payload);
 			switch (type)
 			{
+				case (byte)SCPackets.HANDSHAKE:
+					if (CurrentState == ConnectionState.UNINITIALIZED)
+						Write(GetIdentifyPacket(Username));
+					else
+					{
 
+					}
+					break;
+				case (byte)SCPackets.MESSAGE:
+					bool broadcast = BitConverter.ToBoolean(payloadList.GetByteInByteCollection().CheckEndianness(), 0);
+					int authorLength = payloadList.GetNextInt();
+					string author = Encoding.Unicode.GetString(payloadList.GetBytes(authorLength));
+					int messageLength = payloadList.GetNextInt();
+					string message = Encoding.Unicode.GetString(payloadList.GetBytes(messageLength));
+					MessageReceived?.Invoke(this, new MessageReceivedEventArgs(broadcast, author, message));
+					break;
 			}
 		}
 
@@ -44,12 +66,12 @@ namespace Notpad.Client.Net
 
 		public Packet GetQueryPacket()
 		{
-			return new Packet((byte)CSPackets.QUERY, new byte[0]);
+			return new Packet((byte)CSPackets.QUERY);
 		}
 
 		public Packet GetHandshakePacket()
 		{
-			return new Packet((byte)CSPackets.HANDSHAKE, new byte[0]);
+			return new Packet((byte)CSPackets.HANDSHAKE);
 		}
 
 		public Packet GetIdentifyPacket(string username)
@@ -87,14 +109,29 @@ namespace Notpad.Client.Net
 				Stream.Write(buffer, offset, size);
 			}
 		}
+
+		public void Write(Packet packet)
+		{
+			Write(packet.Raw, 0, packet.Length);
+		}
 	}
 }
 
 public class MessageReceivedEventArgs : EventArgs
 {
-	public string Message { get; set; }
+	public bool Broadcast { get; set; }
 	public string Author { get; set; }
-	public DateTime Timestamp { get; protected set; }
+	public string Message { get; set; }
+
+	public MessageReceivedEventArgs()
+	{
+
+	}
+
+	public MessageReceivedEventArgs(bool Broadcast, string Author, string Message)
+	{
+
+	}
 }
 
 public enum ConnectionState

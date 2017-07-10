@@ -57,9 +57,12 @@ namespace Notpad.Client.Net
 			Payload = bytes.Skip(1).ToArray();
 		}
 
-		public Packet(byte id, byte[] payload)
+		public Packet(byte id, byte[] payload = null)
 		{
 			PacketID = id;
+			if (payload == null)
+				payload = new byte[0];
+
 			Payload = payload;
 		}
 

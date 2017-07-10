@@ -34,5 +34,28 @@ namespace Notpad.Client
 			else
 				return buffer;
 		}
+
+		public static byte GetByte(this List<byte> bytes, int index = 0)
+		{
+			byte value = bytes.GetBytes(1, index)[0];
+			return value;
+		}
+
+		public static byte[] GetByteInByteCollection(this List<byte> bytes, int index = 0)
+		{
+			return new byte[1] { bytes.GetByte(index) };
+		}
+
+		public static byte[] GetBytes(this List<byte> bytes, int count, int index = 0)
+		{
+			byte[] value = bytes.Skip(index).Take(count).ToArray();
+			bytes.RemoveRange(index, count);
+			return value;
+		}
+
+		public static int GetNextInt(this List<byte> bytes)
+		{
+			return BitConverter.ToInt32(bytes.GetBytes(4).CheckEndianness(), 0);
+		}
 	}
 }
