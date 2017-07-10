@@ -104,7 +104,7 @@ namespace Notpad.Client
 
 		private void ConnectButtonClick(object sender, EventArgs e)
 		{
-
+			throw new NotImplementedException();
 		}
 	}
 }
