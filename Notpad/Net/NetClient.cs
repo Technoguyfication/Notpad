@@ -67,6 +67,7 @@ namespace Notpad.Client.Net
 				Online = online,
 				MaxOnline = online,
 				Endpoint = (IPEndPoint)Client.RemoteEndPoint,
+				Status = ServerStatus.ONLINE,
 			};
 		}
 

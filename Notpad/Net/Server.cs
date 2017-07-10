@@ -9,9 +9,17 @@ using System.Threading.Tasks;
 
 namespace Notpad.Client.Net
 {
-	[Serializable]
-	public struct Server
+	public enum ServerStatus
 	{
+		UNAVAILABLE,
+		OFFLINE,
+		ONLINE,
+	}
+
+	[Serializable]
+	public class Server
+	{
+		public ServerStatus Status { get; set; } = ServerStatus.UNAVAILABLE;
 		public IPAddress Address { get; set; }
 		public ushort Port { get; set; }
 		public string Name { get; set; }

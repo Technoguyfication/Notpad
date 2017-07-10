@@ -33,22 +33,30 @@ namespace Notpad.Client
 				serverListView.Items.Add(item);
 			}
 
-			for (int i = 0; i < serverListView.Items.Count; i++)
+			QueryServers();
+		}
+
+		private void QueryServers()
+		{
+			foreach (ListViewItem item in serverListView.Items)
 			{
 				new Thread(() =>
 				{
 					NetClient client = new NetClient(null);
+					Server server = ((Server)item.Tag);
 					try
 					{
-						client.Connect(((Server)serverListView.Items[i].Tag).Endpoint);
+						client.Connect(server.Endpoint);
+						server = client.Query();
 					}
-					catch (Exception) { return; }
-
-					Server updatedServer = client.Query();
+					catch (Exception)
+					{
+						server.Status = ServerStatus.OFFLINE;
+					}
 
 					this.InvokeIfRequired(() =>
 					{
-						serverListView.Items[i] = GetServerListViewItem(updatedServer);
+						serverListView.Items[serverListView.Items.IndexOf(item)] = GetServerListViewItem(server);
 					});
 				})
 				{
@@ -61,10 +69,33 @@ namespace Notpad.Client
 
 		private ListViewItem GetServerListViewItem(Server server)
 		{
-			return new ListViewItem(new string[] { server.Name, server.Endpoint.ToString(), $"{server.Online}/{server.MaxOnline}" })
+			ListViewItem item = new ListViewItem(new string[] { server.Name, server.Endpoint.ToString(), $"{server.Online}/{server.MaxOnline}" })
 			{
 				Tag = server
 			};
+			switch (server.Status)
+			{
+				case ServerStatus.UNAVAILABLE:
+					item.Group = serverListView.Groups["queryingGroup"];
+					break;
+				case ServerStatus.OFFLINE:
+					item.Group = serverListView.Groups["offlineGroup"];
+					break;
+				case ServerStatus.ONLINE:
+					item.Group = serverListView.Groups["onlineGroup"];
+					break;
+			}
+			return item;
+		}
+
+		private void QueryButtonClick(object sender, EventArgs e)
+		{
+			QueryServers();
+		}
+
+		private void ConnectButtonClick(object sender, EventArgs e)
+		{
+
 		}
 	}
 }
