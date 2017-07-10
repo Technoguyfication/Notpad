@@ -44,6 +44,8 @@ namespace Notpad.Client
 				{
 					NetClient client = new NetClient(null);
 					Server server = ((Server)item.Tag);
+					server.Status = ServerStatus.UNAVAILABLE;
+					this.InvokeIfRequired(() => { UpdateServerItem(server); });
 					try
 					{
 						client.Connect(server.Endpoint);
@@ -54,10 +56,7 @@ namespace Notpad.Client
 						server.Status = ServerStatus.OFFLINE;
 					}
 
-					this.InvokeIfRequired(() =>
-					{
-						serverListView.Items[serverListView.Items.IndexOf(item)] = GetServerListViewItem(server);
-					});
+					this.InvokeIfRequired(() => { UpdateServerItem(server); });
 				})
 				{
 					IsBackground = true,
@@ -65,6 +64,16 @@ namespace Notpad.Client
 					Priority = ThreadPriority.BelowNormal,
 				}.Start();
 			}
+		}
+
+		private void UpdateServerItem(Server server)
+		{
+			ListViewItem item = serverListView.Items.Find((ListViewItem _item) =>
+			{
+				return ((Server)_item.Tag).Equals(server);
+			});
+
+			serverListView.Items[serverListView.Items.IndexOf(item)] = GetServerListViewItem(server);
 		}
 
 		private ListViewItem GetServerListViewItem(Server server)

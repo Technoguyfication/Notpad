@@ -74,5 +74,13 @@ namespace Notpad.Client
 			stream.Read(buffer, 0, length);
 			return new Packet(buffer);
 		}
+
+		public static ListViewItem Find(this ListView.ListViewItemCollection items, Predicate<ListViewItem> match)
+		{
+			ListViewItem[] __items = new ListViewItem[items.Count];
+			items.CopyTo(__items, 0);
+			List<ListViewItem> _items = new List<ListViewItem>(__items);
+			return _items.Find(match);
+		}
 	}
 }

@@ -69,6 +69,7 @@
             this.nameColumn,
             this.addressColumn,
             this.onlineColumn});
+			this.serverListView.FullRowSelect = true;
 			listViewGroup1.Header = "Online";
 			listViewGroup1.Name = "onlineGroup";
 			listViewGroup2.Header = "Querying...";
