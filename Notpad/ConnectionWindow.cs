@@ -26,6 +26,8 @@ namespace Notpad.Client
 
 		private void WindowLoaded (object sender, EventArgs e)
 		{
+			serverListView.Items.Clear();
+
 			PopulateServers();
 			QueryServers();
 			usernameTextbox.Text = RegSettings.Username;
@@ -35,7 +37,6 @@ namespace Notpad.Client
 		private void PopulateServers()
 		{
 			Server[] Servers = RegSettings.Servers;
-			serverListView.Items.Clear();
 			foreach (Server server in Servers)
 			{
 				AddServerListing(server);
@@ -118,18 +119,22 @@ namespace Notpad.Client
 
 			if (item == null)
 			{
-				serverListView.Items.Add(CreateItemForServer(server));
+				serverListView.Items.Add(CreateItemForServer(server, false));
 				return;
 			}
 
-			serverListView.Items[serverListView.Items.IndexOf(item)] = CreateItemForServer(server);
+			int itemIndex = serverListView.Items.IndexOf(item);
+			serverListView.Items[itemIndex] = CreateItemForServer(server, item.Selected);
+
+			
 		}
 
-		private ListViewItem CreateItemForServer(Server server)
+		private ListViewItem CreateItemForServer(Server server, bool selected)
 		{
 			ListViewItem item = new ListViewItem(new string[] { server.Name, server.Endpoint.ToString(), $"{server.Online}/{server.MaxOnline}" })
 			{
-				Tag = server
+				Tag = server,
+				Selected = selected,
 			};
 			switch (server.Status)
 			{
