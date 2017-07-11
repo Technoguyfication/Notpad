@@ -254,7 +254,7 @@ namespace Notpad.Client.Net
 					}
 					catch (Exception e)
 					{
-						Disconnect($"Error reading server stream: {e.Message}");
+						Disconnect(e.Message);
 						break;
 					}
 				}
