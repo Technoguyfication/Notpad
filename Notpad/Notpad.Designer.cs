@@ -52,7 +52,6 @@
 			this.inputTextBox = new System.Windows.Forms.TextBox();
 			this.basicToolTip = new System.Windows.Forms.ToolTip(this.components);
 			this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
-			this.serverConnectTimeoutTimer = new System.Windows.Forms.Timer(this.components);
 			this.SuspendLayout();
 			// 
 			// mainMenu
@@ -218,10 +217,6 @@
 			this.contextMenuStrip1.Name = "contextMenuStrip1";
 			this.contextMenuStrip1.Size = new System.Drawing.Size(61, 4);
 			// 
-			// serverConnectTimeoutTimer
-			// 
-			this.serverConnectTimeoutTimer.Interval = 30000;
-			// 
 			// Notpad
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -264,7 +259,6 @@
 		private System.Windows.Forms.MenuItem timeDateMenuItem;
 		private System.Windows.Forms.MenuItem clearTextMenuItem;
 		private System.Windows.Forms.MenuItem connectMenuItem;
-		public System.Windows.Forms.Timer serverConnectTimeoutTimer;
 		private System.Windows.Forms.MenuItem disconnectMenuItem;
 	}
 }

@@ -70,23 +70,32 @@ namespace Notpad.Client
 			{
 				Thread thread = new Thread(() =>
 				{
-					NetClient client = new NetClient(null);
 					Server server = GetServerFromItem(item);
-					server.Status = ServerStatus.UNAVAILABLE;
+					NetClient client = new NetClient(null);
+					client.ServerQueryReceived += (object sender, ServerQueryReceivedEventArgs e) =>
+					{
+						updateServer(e.Server);
+					};
+					client.ConnectionDisconnected += (object sender, ConnectionDisconnectedEventArgs e) =>
+					{
+						server.Status = ServerStatus.OFFLINE;
+						updateServer(server);
+					};
 
-					this.InvokeIfRequired(() => { AddServerListing(server); CheckServerSelected();  });
+					server.Status = ServerStatus.UNAVAILABLE;
+					updateServer(server);
 
 					try
 					{
 						client.Connect(server.Endpoint);
-						server = client.Query();
 					}
-					catch (Exception)   // server is most likely offline or otherwise unreachable
-					{
-						server.Status = ServerStatus.OFFLINE;
-					}
+					catch (Exception)
+					{ }
 
-					this.InvokeIfRequired(() => { AddServerListing(server); CheckServerSelected(); });
+					void updateServer(Server s)
+					{
+						this.InvokeIfRequired(() => { AddServerListing(s); CheckServerSelected(); });
+					}
 				})
 				{
 					IsBackground = true,

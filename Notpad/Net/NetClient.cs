@@ -1,10 +1,12 @@
-﻿using Notpad.Client.Util;
+﻿using Notpad.Client.Net;
+using Notpad.Client.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -12,8 +14,8 @@ namespace Notpad.Client.Net
 {
 	public class NetClient : TcpClient, IStreamable
 	{
-		public readonly object StreamReadLock = new object();
-		public readonly object StreamWriteLock = new object();
+		public object StreamReadLock { get; } = new object();
+		public object StreamWriteLock { get; } = new object();
 		public NetworkStream Stream
 		{
 			get
@@ -23,14 +25,18 @@ namespace Notpad.Client.Net
 		}
 
 		public string Username { get; private set; }
-
-		public ConnectionState CurrentState;
+		public ConnectionState CurrentState { get; private set; } = ConnectionState.DISCONNECTED;
 
 		public delegate void MessageEventHandler(object sender, MessageEventArgs e);
-		public event MessageEventHandler Message;
+		public delegate void ServerQueryReceivedEventHandler(object sender, ServerQueryReceivedEventArgs e);
+		public delegate void ConnectionDisconnectedEventHandler(object sender, ConnectionDisconnectedEventArgs e);
 
+		public event MessageEventHandler Message;
+		public event ServerQueryReceivedEventHandler ServerQueryReceived;
 		public event EventHandler ConnectionEstablished;
-		public event EventHandler ConnectionDisconnected;
+		public event ConnectionDisconnectedEventHandler ConnectionDisconnected;
+
+		private Thread ReadLoopThread;
 
 		public NetClient(string username) : base()
 		{
@@ -38,52 +44,70 @@ namespace Notpad.Client.Net
 			CurrentState = ConnectionState.DISCONNECTED;
 		}
 
-		new public void Connect(IPEndPoint ep)
+		~NetClient()
 		{
-			CurrentState = ConnectionState.CONNECTING;
+			Disconnect("Client being disposed");
+		}
+
+		/// <summary>
+		/// Connect to the specified <see cref="IPEndPoint"/>
+		/// </summary>
+		/// <param name="endpoint"></param>
+		new public void Connect(IPEndPoint endpoint)
+		{
+			if (CurrentState != ConnectionState.DISCONNECTED)
+				Disconnect("Connection already disconnected");
+
+			CurrentState = ConnectionState.UNVERIFIED;
 			try
 			{
-				base.Connect(ep);
+				base.Connect(endpoint);
 			}
 			catch (Exception)
 			{
-				Disconnect();
+				Disconnect("Failed to connect to server");
 				throw;
 			}
+
+			if (ReadLoopThread != null && ((int)ReadLoopThread.ThreadState % 16) == 0)
+				ReadLoopThread.Abort();
+
+			ReadLoopThread = new Thread(ReadLoop)
+			{
+				IsBackground = true,
+				Name = "Network Listener",
+			};
+
+			ReadLoopThread.Start();
 		}
 
 		public void Disconnect()
+		{
+			Disconnect(null);
+		}
+
+		public void Disconnect(string reason)
 		{
 			try
 			{
 				if (Client.Connected)
 					Client.Disconnect(true);
+
+				if (ReadLoopThread != null && ((int)ReadLoopThread.ThreadState % 16) == 0)
+					ReadLoopThread.Abort();
 			}
 			catch (Exception e)
 			{
 				SendMessage(MessageType.CHAT, $"Error closing connection: {e.Message}");
 			}
-			CurrentState = ConnectionState.DISCONNECTED;
-			ConnectionDisconnected?.Invoke(this, EventArgs.Empty);
-		}
-
-		public Server Query()
-		{
-			Write(GetQueryPacket());
-			Packet response = this.GetNextPacket();
-			List<byte> buffer = new List<byte>(response.Payload);
-			int serverNameLength = buffer.GetNextInt();
-			string serverName = Encoding.Unicode.GetString(buffer.GetBytes(serverNameLength));
-			int online = buffer.GetNextInt();
-			int maxOnline = buffer.GetNextInt();
-			return new Server()
+			if (CurrentState != ConnectionState.DISCONNECTED)
 			{
-				Name = serverName,
-				Online = online,
-				MaxOnline = online,
-				Endpoint = (IPEndPoint)Client.RemoteEndPoint,
-				Status = ServerStatus.ONLINE,
-			};
+				CurrentState = ConnectionState.DISCONNECTED;
+				ConnectionDisconnected?.Invoke(this, new ConnectionDisconnectedEventArgs()
+				{
+					Reason = reason
+				});
+			}
 		}
 
 		#region Packet Factory
@@ -123,8 +147,30 @@ namespace Notpad.Client.Net
 			List<byte> payloadList = new List<byte>(payload);
 			switch (type)
 			{
+				case (byte)SCPackets.QUERY:
+					if ((int)CurrentState % 8 == 0)
+						break;
+
+					int nameLength = payloadList.GetNextInt();
+					string name = Encoding.Unicode.GetString(payloadList.GetBytes(nameLength));
+					int maxOnline = payloadList.GetNextInt();
+					int online = payloadList.GetNextInt();
+
+					ServerQueryReceived?.Invoke(this,
+						new ServerQueryReceivedEventArgs()
+						{
+							Server = new Server()
+							{
+								Name = name,
+								MaxOnline = maxOnline,
+								Online = online,
+								Status = ServerStatus.ONLINE,
+								Endpoint = (IPEndPoint)Client.RemoteEndPoint
+							}
+						});
+					break;
 				case (byte)SCPackets.HANDSHAKE:
-					if (CurrentState != ConnectionState.CONNECTING)
+					if (CurrentState != ConnectionState.UNVERIFIED)
 						break;
 
 					Write(GetIdentifyPacket(Username));
@@ -144,7 +190,7 @@ namespace Notpad.Client.Net
 						author);
 					break;
 				case (byte)SCPackets.READY:
-					if (CurrentState != ConnectionState.CONNECTING)
+					if (CurrentState != ConnectionState.UNVERIFIED)
 						break;
 
 					bool ready = BitConverter.ToBoolean(payloadList.GetByteInByteCollection(), 0);
@@ -153,8 +199,7 @@ namespace Notpad.Client.Net
 					{
 						int reasonLength = payloadList.GetNextInt();
 						string reason = Encoding.Unicode.GetString(payloadList.GetBytes(reasonLength));
-						SendMessage(MessageType.RAW, $"Server refused connection: {reason}");
-						Disconnect();
+						Disconnect($"Server refused connection: {reason}");
 						break;
 					}
 					CurrentState = ConnectionState.READY;
@@ -191,14 +236,44 @@ namespace Notpad.Client.Net
 			HandlePacket(packet.PacketID, packet.Payload);
 		}
 
+		private void ReadLoop()
+		{
+			while (CurrentState != ConnectionState.DISCONNECTED)
+			{
+				lock (StreamReadLock)
+				{
+					try
+					{
+						Packet packet = this.GetNextPacket();
+						HandlePacket(packet);
+					}
+					catch (DisconnectedException)
+					{
+						Disconnect("Connection closed by remote host.");
+						break;
+					}
+					catch (Exception e)
+					{
+						Disconnect($"Error reading server stream: {e.Message}");
+						break;
+					}
+				}
+			}
+		}
+
 		public void Read(byte[] buffer, int offset, int size)
 		{
 			lock (StreamReadLock)
 			{
-				int bytesRead = Stream.Read(buffer, offset, size);
-				if (bytesRead == 0 && size != 0)
+				int bytesRead = 0;
+				while (bytesRead > size)
 				{
-					throw new DisconnectedException("Failed to read from network stream");
+					int currentBytesRead = Stream.Read(buffer, offset + bytesRead, size - bytesRead);
+					if (currentBytesRead == 0 && size != 0)
+					{
+						throw new DisconnectedException("Failed to read from network stream");
+					}
+					bytesRead += currentBytesRead;
 				}
 			}
 		}
@@ -246,6 +321,16 @@ public class MessageEventArgs : EventArgs
 	public MessageBoxIcon NotificationIcon { get; set; }
 }
 
+public class ServerQueryReceivedEventArgs : EventArgs
+{
+	public Server Server;
+}
+
+public class ConnectionDisconnectedEventArgs : EventArgs
+{
+	public string Reason;
+}
+
 public enum MessageType
 {
 	BROADCAST,
@@ -254,11 +339,14 @@ public enum MessageType
 	NOTIFICATION,
 }
 
-public enum ConnectionState
+/// <summary>
+/// Statuses divisible by 5 are not open, divisible by 8 are open.
+/// </summary>
+public enum ConnectionState : int
 {
-	CONNECTING,     // attempting to connect
-	DISCONNECTED,  // no handshake received
-	READY,          // client ready
+	DISCONNECTED = 5,
+	UNVERIFIED = 8,     // attempting to start full connection
+	READY = 16,         // client ready
 }
 
 public enum CSPackets : byte

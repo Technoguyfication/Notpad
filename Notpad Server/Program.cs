@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using Newtonsoft.Json;
+using System.Net.Sockets;
+using System.Threading;
 
 namespace Notpad.Server
 {
@@ -12,6 +14,9 @@ namespace Notpad.Server
 	{
 		public static readonly string ConfigPath = Path.GetFullPath("config.json");
 		public static ServerSettings Settings;
+
+		public TcpListener Listener { get; private set; }
+		public Thread ListenThread { get; private set; }
 
 		static void Main(string[] args)
 		{
@@ -37,6 +42,30 @@ namespace Notpad.Server
 			}
 
 			Settings = JsonConvert.DeserializeObject<ServerSettings>(configJson);
+
+			new Program().Start();
+		}
+
+		public void Start()
+		{
+			Listener = new TcpListener(Settings.IPAddress, Settings.Port);
+			ListenThread = new Thread(ClientListenLoop)
+			{
+				IsBackground = false,
+				Name = "Client Listen Loop",
+			};
+
+			ListenThread.Start();
+			Console.WriteLine($"Now listening on {Settings.EndPoint.ToString()}");
+		}
+
+		private void ClientListenLoop()
+		{
+			Listener.Start();
+			while (true)
+			{
+				Client client = new Client(Listener.AcceptTcpClient());
+			}
 		}
 	}
 }

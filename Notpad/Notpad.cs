@@ -43,14 +43,6 @@ namespace Notpad.Client
 						Client.ConnectionDisconnected += ClientConnectionDisconnect;
 					}
 
-					serverConnectTimeoutTimer.Tick += (object sender, EventArgs e) =>
-					{
-						PrintString("Connection timed out.");
-						Client.Disconnect();
-					};
-
-					serverConnectTimeoutTimer.Start();
-
 					if (Client.CurrentState != ConnectionState.DISCONNECTED)
 					{
 						this.InvokeIfRequired(Client.Disconnect);
@@ -90,13 +82,15 @@ namespace Notpad.Client
 
 		private void ChatConnectionEstablished(object sender, EventArgs e)
 		{
-			serverConnectTimeoutTimer.Stop();
 			PrintString("Connected!");
 		}
 
-		private void ClientConnectionDisconnect(object sender, EventArgs e)
+		private void ClientConnectionDisconnect(object sender, ConnectionDisconnectedEventArgs e)
 		{
-			PrintString("Disconnected from server.");
+			if (e.Reason != null)
+				PrintString($"Disconnected from server: {e.Reason}");
+			else
+				PrintString("Disconnected from server.");
 		}
 
 		#endregion
