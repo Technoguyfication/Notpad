@@ -64,7 +64,8 @@ namespace Notpad.Client
 		public static int GetNextInt(this IStreamable stream)
 		{
 			byte[] bytes = new byte[4];
-			return BitConverter.ToInt32(bytes.CheckEndianness(), 0);
+			stream.Read(bytes, 0, 4);
+			return bytes.ToList().GetNextInt();
 		}
 
 		public static Packet GetNextPacket(this IStreamable stream)
