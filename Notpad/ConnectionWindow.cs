@@ -125,8 +125,6 @@ namespace Notpad.Client
 
 			int itemIndex = serverListView.Items.IndexOf(item);
 			serverListView.Items[itemIndex] = CreateItemForServer(server, item.Selected);
-
-			
 		}
 
 		private ListViewItem CreateItemForServer(Server server, bool selected)
