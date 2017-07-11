@@ -266,7 +266,7 @@ namespace Notpad.Client.Net
 			lock (StreamReadLock)
 			{
 				int bytesRead = 0;
-				while (bytesRead > size)
+				while (bytesRead < size)
 				{
 					int currentBytesRead = Stream.Read(buffer, offset + bytesRead, size - bytesRead);
 					if (currentBytesRead == 0 && size != 0)
