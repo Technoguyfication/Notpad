@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace Notpad.Client.Net
 {
@@ -27,7 +28,6 @@ namespace Notpad.Client.Net
 
 		public delegate void MessageEventHandler(object sender, MessageEventArgs e);
 		public event MessageEventHandler Message;
-		public event MessageEventHandler Notification;
 
 		public event EventHandler ConnectionEstablished;
 		public event EventHandler ConnectionDisconnected;
@@ -35,20 +35,21 @@ namespace Notpad.Client.Net
 		public NetClient(string username) : base()
 		{
 			Username = username;
-			CurrentState = ConnectionState.UNINITIALIZED;
+			CurrentState = ConnectionState.DISCONNECTED;
 		}
 
 		public void Disconnect()
 		{
 			try
 			{
-				Stream.Close();
-				Disconnect();
+				if (Client.Connected)
+					Client.Disconnect(true);
 			}
 			catch (Exception e)
 			{
-				SendMessage($"Error closing connection: {e.Message}");
+				SendMessage(MessageType.CHAT, $"Error closing connection: {e.Message}");
 			}
+			CurrentState = ConnectionState.DISCONNECTED;
 			ConnectionDisconnected?.Invoke(this, EventArgs.Empty);
 		}
 
@@ -109,10 +110,10 @@ namespace Notpad.Client.Net
 			switch (type)
 			{
 				case (byte)SCPackets.HANDSHAKE:
-					if (CurrentState == ConnectionState.UNINITIALIZED)
-						Write(GetIdentifyPacket(Username));
-					else
-						SendMessage("Warning: Handshake packet received when client was not in ready state!");
+					if (CurrentState != ConnectionState.CONNECTING)
+						break;
+
+					Write(GetIdentifyPacket(Username));
 					break;
 				case (byte)SCPackets.MESSAGE:
 					if (CurrentState != ConnectionState.READY)
@@ -123,16 +124,48 @@ namespace Notpad.Client.Net
 					string author = Encoding.Unicode.GetString(payloadList.GetBytes(authorLength));
 					int messageLength = payloadList.GetNextInt();
 					string message = Encoding.Unicode.GetString(payloadList.GetBytes(messageLength));
-					SendMessage((broadcast) ? $"[SERVER] {message}" : $"{author}: {message}");
+					SendMessage(
+						(broadcast) ? MessageType.BROADCAST : MessageType.CHAT,
+						message,
+						author);
 					break;
 				case (byte)SCPackets.READY:
-					if (CurrentState == ConnectionState.READY)
-						SendMessage("Warning: Server tried changing connection state to an invalid state.");
+					if (CurrentState != ConnectionState.CONNECTING)
+						break;
+
+					bool ready = BitConverter.ToBoolean(payloadList.GetByteInByteCollection(), 0);
+
+					if (!ready)
+					{
+						int reasonLength = payloadList.GetNextInt();
+						string reason = Encoding.Unicode.GetString(payloadList.GetBytes(reasonLength));
+						SendMessage(MessageType.RAW, $"Server refused connection: {reason}");
+						Disconnect();
+						break;
+					}
 					CurrentState = ConnectionState.READY;
 					ConnectionEstablished?.Invoke(this, EventArgs.Empty);
 					break;
 				case (byte)SCPackets.NOTIFICATION:
+					if (CurrentState != ConnectionState.READY)
+						break;
 
+					MessageBoxIcon[] iconMap = new MessageBoxIcon[]
+					{
+						MessageBoxIcon.None,
+						MessageBoxIcon.Information,
+						MessageBoxIcon.Warning,
+						MessageBoxIcon.Error,
+					};
+					int level = payloadList.GetNextInt();
+					int contentLength = payloadList.GetNextInt();
+					string content = Encoding.Unicode.GetString(payloadList.GetBytes(contentLength));
+					SendMessage(new MessageEventArgs()
+					{
+						Content = content,
+						Type = MessageType.NOTIFICATION,
+						NotificationIcon = iconMap[level],
+					});
 					break;
 				default:
 					break;
@@ -174,35 +207,43 @@ namespace Notpad.Client.Net
 			Write(packet.Raw);
 		}
 
-		private void SendMessage(string message)
+		private void SendMessage(MessageType type, string content, string author = null)
 		{
-			Message?.Invoke(this, new MessageEventArgs(message));
+			SendMessage(new MessageEventArgs()
+			{
+				Type = type,
+				Content = content,
+				Author = author
+			});
 		}
 
-		private void SendNotification(string message)
+		private void SendMessage(MessageEventArgs e)
 		{
-			Notification?.Invoke(this, new MessageEventArgs(message));
+			Message?.Invoke(this, e);
 		}
 	}
 }
 
 public class MessageEventArgs : EventArgs
 {
+	public MessageType Type { get; set; }
+	public string Author { get; set; }
 	public string Content { get; set; }
-	public MessageEventArgs()
-	{
+	public MessageBoxIcon NotificationIcon { get; set; }
+}
 
-	}
-
-	public MessageEventArgs(string content)
-	{
-		Content = content;
-	}
+public enum MessageType
+{
+	BROADCAST,
+	RAW,
+	CHAT,
+	NOTIFICATION,
 }
 
 public enum ConnectionState
 {
-	UNINITIALIZED,  // no handshake received
+	CONNECTING,		// attempting to connect
+	DISCONNECTED,  // no handshake received
 	READY,          // client ready
 }
 

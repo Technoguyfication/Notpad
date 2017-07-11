@@ -16,6 +16,7 @@ namespace Notpad.Client
 	public partial class ConnectionWindow : Form
 	{
 		Notpad MainForm;
+		List<Thread> queryThreads = new List<Thread>();
 
 		public ConnectionWindow(Notpad mainForm)
 		{
@@ -23,60 +24,108 @@ namespace Notpad.Client
 			InitializeComponent();
 		}
 
-		private void WindowLoad(object sender, EventArgs e)
+		private void WindowLoaded (object sender, EventArgs e)
+		{
+			PopulateServers();
+			QueryServers();
+			usernameTextbox.Text = RegSettings.Username;
+			CheckServerSelected();
+		}
+
+		private void PopulateServers()
 		{
 			Server[] Servers = RegSettings.Servers;
 			serverListView.Items.Clear();
 			foreach (Server server in Servers)
 			{
-				ListViewItem item = GetServerListViewItem(server);
-				serverListView.Items.Add(item);
+				AddServerListing(server);
 			}
+		}
 
-			QueryServers();
+		private void UpdateServer(Server server)
+		{
+			List<Server> servers = RegSettings.Servers.ToList();
+			int serverIndex = servers.FindIndex((s) => { return s.UniqueID == server.UniqueID; });
+
+			if (serverIndex == -1)
+				servers.Add(server);
+			else
+				servers[serverIndex] = server;
+
+			RegSettings.Servers = servers.ToArray();
+			CheckServerSelected();
 		}
 
 		private void QueryServers()
 		{
+			foreach (Thread thread in queryThreads)
+			{
+				thread.Abort();
+			}
+
+			queryThreads.Clear();
+
 			foreach (ListViewItem item in serverListView.Items)
 			{
-				new Thread(() =>
+				Thread thread = new Thread(() =>
 				{
 					NetClient client = new NetClient(null);
-					Server server = ((Server)item.Tag);
+					Server server = GetServerFromItem(item);
 					server.Status = ServerStatus.UNAVAILABLE;
-					this.InvokeIfRequired(() => { UpdateServerItem(server); });
+
+					this.InvokeIfRequired(() => { AddServerListing(server); CheckServerSelected();  });
+
 					try
 					{
 						client.Connect(server.Endpoint);
 						server = client.Query();
 					}
-					catch (Exception)
+					catch (Exception)   // server is most likely offline or otherwise unreachable
 					{
 						server.Status = ServerStatus.OFFLINE;
 					}
 
-					this.InvokeIfRequired(() => { UpdateServerItem(server); });
+					this.InvokeIfRequired(() => { AddServerListing(server); CheckServerSelected(); });
 				})
 				{
 					IsBackground = true,
 					Name = "Server Query Thread",
 					Priority = ThreadPriority.BelowNormal,
-				}.Start();
+				};
+				queryThreads.Add(thread);
+			}
+
+			try
+			{
+				foreach (Thread thread in queryThreads)
+				{
+					if (thread.ThreadState != ThreadState.Running)
+						thread.Start();
+				}
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show($"Could not poll servers: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 			}
 		}
 
-		private void UpdateServerItem(Server server)
+		private void AddServerListing(Server server)
 		{
 			ListViewItem item = serverListView.Items.Find((ListViewItem _item) =>
 			{
 				return ((Server)_item.Tag).Equals(server);
 			});
 
-			serverListView.Items[serverListView.Items.IndexOf(item)] = GetServerListViewItem(server);
+			if (item == null)
+			{
+				serverListView.Items.Add(CreateItemForServer(server));
+				return;
+			}
+
+			serverListView.Items[serverListView.Items.IndexOf(item)] = CreateItemForServer(server);
 		}
 
-		private ListViewItem GetServerListViewItem(Server server)
+		private ListViewItem CreateItemForServer(Server server)
 		{
 			ListViewItem item = new ListViewItem(new string[] { server.Name, server.Endpoint.ToString(), $"{server.Online}/{server.MaxOnline}" })
 			{
@@ -97,6 +146,11 @@ namespace Notpad.Client
 			return item;
 		}
 
+		private Server GetServerFromItem(ListViewItem item)
+		{
+			return ((Server)item.Tag);
+		}
+
 		private void QueryButtonClick(object sender, EventArgs e)
 		{
 			QueryServers();
@@ -104,7 +158,69 @@ namespace Notpad.Client
 
 		private void ConnectButtonClick(object sender, EventArgs e)
 		{
-			throw new NotImplementedException();
+			MainForm.InvokeIfRequired(() =>
+			{
+				string username = usernameTextbox.Text.Trim();
+				if (string.IsNullOrEmpty(username))
+				{
+					MessageBox.Show("Please enter a username.", "Error", MessageBoxButtons.OK);
+					return;
+				}
+				Server server = GetSelectedServer();
+				if (server == null)
+				{
+					MessageBox.Show("No server selected");
+					return;
+				}
+				DialogResult = DialogResult.OK;
+				MainForm.InvokeIfRequired(() =>
+				{
+					MainForm.ConnectToServer(GetSelectedServer().Endpoint, username);
+				});
+			});
+		}
+
+		private Server GetSelectedServer()
+		{
+			if (serverListView.SelectedItems.Count <= 0)
+				return null;
+			return GetServerFromItem(serverListView.SelectedItems[0]);
+		}
+
+		private void WindowKeyDown(object sender, KeyEventArgs e)
+		{
+			if (e.KeyCode == Keys.F5)
+			{
+				QueryServers();
+				e.SuppressKeyPress = true;
+			}
+			else if (e.KeyCode == Keys.Escape)
+			{
+				Hide();
+				e.SuppressKeyPress = true;
+			}
+		}
+
+		private void UsernameTextBoxTextChanged(object sender, EventArgs e)
+		{
+			RegSettings.Username = usernameTextbox.Text.Trim();
+		}
+
+		private void CheckServerSelected()
+		{
+			if (GetSelectedServer() == null)
+			{
+				connectButton.Enabled = false;
+			}
+			else
+			{
+				connectButton.Enabled = true;
+			}
+		}
+
+		private void ServerListViewSelectionChanged(object sender, ListViewItemSelectionChangedEventArgs e)
+		{
+			CheckServerSelected();
 		}
 	}
 }

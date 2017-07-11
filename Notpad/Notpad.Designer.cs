@@ -33,6 +33,7 @@
 			this.mainMenu = new System.Windows.Forms.MainMenu(this.components);
 			this.fileMenuItem = new System.Windows.Forms.MenuItem();
 			this.connectMenuItem = new System.Windows.Forms.MenuItem();
+			this.disconnectMenuItem = new System.Windows.Forms.MenuItem();
 			this.fileMenuItemDivider = new System.Windows.Forms.MenuItem();
 			this.exitMenuItem = new System.Windows.Forms.MenuItem();
 			this.editMenuItem = new System.Windows.Forms.MenuItem();
@@ -51,6 +52,7 @@
 			this.inputTextBox = new System.Windows.Forms.TextBox();
 			this.basicToolTip = new System.Windows.Forms.ToolTip(this.components);
 			this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
+			this.serverConnectTimeoutTimer = new System.Windows.Forms.Timer(this.components);
 			this.SuspendLayout();
 			// 
 			// mainMenu
@@ -67,9 +69,11 @@
 			this.fileMenuItem.Index = 0;
 			this.fileMenuItem.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
             this.connectMenuItem,
+            this.disconnectMenuItem,
             this.fileMenuItemDivider,
             this.exitMenuItem});
 			this.fileMenuItem.Text = "&File";
+			this.fileMenuItem.Popup += new System.EventHandler(this.FileMenuItemPopup);
 			// 
 			// connectMenuItem
 			// 
@@ -77,14 +81,20 @@
 			this.connectMenuItem.Text = "&Connect...";
 			this.connectMenuItem.Click += new System.EventHandler(this.ConnectMenuItemClick);
 			// 
+			// disconnectMenuItem
+			// 
+			this.disconnectMenuItem.Index = 1;
+			this.disconnectMenuItem.Text = "&Disconnect";
+			this.disconnectMenuItem.Click += new System.EventHandler(this.DisconnectMenuItemClick);
+			// 
 			// fileMenuItemDivider
 			// 
-			this.fileMenuItemDivider.Index = 1;
+			this.fileMenuItemDivider.Index = 2;
 			this.fileMenuItemDivider.Text = "-";
 			// 
 			// exitMenuItem
 			// 
-			this.exitMenuItem.Index = 2;
+			this.exitMenuItem.Index = 3;
 			this.exitMenuItem.Text = "Exit";
 			this.exitMenuItem.Click += new System.EventHandler(this.ExitMenuItemClick);
 			// 
@@ -208,6 +218,10 @@
 			this.contextMenuStrip1.Name = "contextMenuStrip1";
 			this.contextMenuStrip1.Size = new System.Drawing.Size(61, 4);
 			// 
+			// serverConnectTimeoutTimer
+			// 
+			this.serverConnectTimeoutTimer.Interval = 30000;
+			// 
 			// Notpad
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -250,6 +264,8 @@
 		private System.Windows.Forms.MenuItem timeDateMenuItem;
 		private System.Windows.Forms.MenuItem clearTextMenuItem;
 		private System.Windows.Forms.MenuItem connectMenuItem;
+		public System.Windows.Forms.Timer serverConnectTimeoutTimer;
+		private System.Windows.Forms.MenuItem disconnectMenuItem;
 	}
 }
 

@@ -107,5 +107,16 @@ namespace Notpad.Client.Util
 				}
 			}
 		}
+		public static string Username
+		{
+			get
+			{
+				return (string)BaseKey.GetValue("Username");
+			}
+			set
+			{
+				BaseKey.SetValue("Username", value);
+			}
+		}
 	}
 }

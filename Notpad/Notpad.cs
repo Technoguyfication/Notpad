@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Notpad.Client.Util;
 using Notpad.Client.Net;
+using System.Net;
+using System.Threading;
 
 namespace Notpad.Client
 {
@@ -26,7 +28,77 @@ namespace Notpad.Client
 
 		#region Network Interaction
 
+		public void ConnectToServer(IPEndPoint ep, string username)
+		{
+			PrintString($"Connecting to {ep.ToString()}");
+			new Thread(() =>
+			{
+				try
+				{
+					if (Client == null)
+					{
+						Client = new NetClient(username);
+					}
 
+					serverConnectTimeoutTimer.Tick += (object sender, EventArgs e) =>
+					{
+						PrintString("Connection timed out.");
+						Client.Disconnect();
+					};
+
+					serverConnectTimeoutTimer.Start();
+
+					if (Client.CurrentState != ConnectionState.DISCONNECTED)
+					{
+						this.InvokeIfRequired(Client.Disconnect);
+					}
+
+					Client.Message += ClientMessage;
+					Client.ConnectionEstablished += ChatConnectionEstablished;
+					Client.ConnectionDisconnected += ClientConnectionDisconnect;
+
+					Client.Connect(ep);
+				}
+				catch (Exception e)
+				{
+					PrintString($"Error connecting to server: {e.Message}");
+				}
+			})
+			{
+				Name = "Server Connect",
+				IsBackground = true,
+			}.Start(); ;
+		}
+
+		private void ClientMessage(object sender, MessageEventArgs e)
+		{
+			switch (e.Type)
+			{
+				case MessageType.CHAT:
+					PrintString($"{e.Author}: {e.Content}");
+					break;
+				case MessageType.RAW:
+					PrintString(e.Content);
+					break;
+				case MessageType.NOTIFICATION:
+					MessageBox.Show(e.Content, "Server Notification", MessageBoxButtons.OK, e.NotificationIcon);
+					break;
+				case MessageType.BROADCAST:
+					PrintString($"(Broadcast): {e.Content}");
+					break;
+			}
+		}
+
+		private void ChatConnectionEstablished(object sender, EventArgs e)
+		{
+			serverConnectTimeoutTimer.Stop();
+			PrintString("Connected!");
+		}
+
+		private void ClientConnectionDisconnect(object sender, EventArgs e)
+		{
+			PrintString("Disconnected from server.");
+		}
 
 		#endregion
 
@@ -172,13 +244,17 @@ namespace Notpad.Client
 			new AboutBox().ShowDialog();
 		}
 
-		private void RTLChanged(RightToLeft rtl)
-		{
-			mainTextBox.RightToLeft = inputTextBox.RightToLeft = rtl;
-		}
-
 		public void PrintString(string text, bool newline = true)
 		{
+			if (InvokeRequired)
+			{
+				this.InvokeIfRequired(() =>
+				{
+					PrintString(text, newline);
+				});
+				return;
+			}
+
 			List<string> updatedLines = mainTextBox.Lines.ToList();
 
 			if (updatedLines.Count >= MaxLines)
@@ -207,6 +283,37 @@ namespace Notpad.Client
 		private void ConnectMenuItemClick(object sender, EventArgs e)
 		{
 			connectionWindow.ShowDialog();
+		}
+
+		private void DisconnectMenuItemClick(object sender, EventArgs e)
+		{
+			if (Client != null && Client.CurrentState != ConnectionState.DISCONNECTED)
+				Client.Disconnect();
+		}
+
+		private void FileMenuItemPopup(object sender, EventArgs e)
+		{
+			CheckDisconnectButton();
+		}
+
+		private void CheckDisconnectButton()
+		{
+			if (Client == null)
+			{
+				disconnectMenuItem.Enabled = false;
+				return;
+			}
+
+			if (Client.CurrentState == ConnectionState.DISCONNECTED)
+			{
+				disconnectMenuItem.Enabled = false;
+				return;
+			}
+			else
+			{
+				disconnectMenuItem.Enabled = true;
+				return;
+			}
 		}
 	}
 }

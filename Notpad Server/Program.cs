@@ -10,6 +10,7 @@ namespace Notpad_Server
 	{
 		static void Main(string[] args)
 		{
+			
 		}
 	}
 }
