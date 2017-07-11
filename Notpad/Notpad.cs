@@ -38,6 +38,9 @@ namespace Notpad.Client
 					if (Client == null)
 					{
 						Client = new NetClient(username);
+						Client.Message += ClientMessage;
+						Client.ConnectionEstablished += ChatConnectionEstablished;
+						Client.ConnectionDisconnected += ClientConnectionDisconnect;
 					}
 
 					serverConnectTimeoutTimer.Tick += (object sender, EventArgs e) =>
@@ -52,10 +55,6 @@ namespace Notpad.Client
 					{
 						this.InvokeIfRequired(Client.Disconnect);
 					}
-
-					Client.Message += ClientMessage;
-					Client.ConnectionEstablished += ChatConnectionEstablished;
-					Client.ConnectionDisconnected += ClientConnectionDisconnect;
 
 					Client.Connect(ep);
 				}

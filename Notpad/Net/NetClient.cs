@@ -38,6 +38,20 @@ namespace Notpad.Client.Net
 			CurrentState = ConnectionState.DISCONNECTED;
 		}
 
+		new public void Connect(IPEndPoint ep)
+		{
+			CurrentState = ConnectionState.CONNECTING;
+			try
+			{
+				base.Connect(ep);
+			}
+			catch (Exception)
+			{
+				Disconnect();
+				throw;
+			}
+		}
+
 		public void Disconnect()
 		{
 			try
@@ -242,7 +256,7 @@ public enum MessageType
 
 public enum ConnectionState
 {
-	CONNECTING,		// attempting to connect
+	CONNECTING,     // attempting to connect
 	DISCONNECTED,  // no handshake received
 	READY,          // client ready
 }
