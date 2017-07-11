@@ -1,0 +1,6 @@
+﻿{
+	"Name": "Notpad Server",
+	"Address": "0.0.0.0",
+	"Port": 10334,
+	"MaxUsers": 25
+}
