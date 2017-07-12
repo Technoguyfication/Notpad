@@ -34,7 +34,9 @@
 			this.fileMenuItem = new System.Windows.Forms.MenuItem();
 			this.connectMenuItem = new System.Windows.Forms.MenuItem();
 			this.disconnectMenuItem = new System.Windows.Forms.MenuItem();
-			this.fileMenuItemDivider = new System.Windows.Forms.MenuItem();
+			this.fileMenuItemDivider1 = new System.Windows.Forms.MenuItem();
+			this.reconnectMenuItem = new System.Windows.Forms.MenuItem();
+			this.fileMenuItemDivider2 = new System.Windows.Forms.MenuItem();
 			this.exitMenuItem = new System.Windows.Forms.MenuItem();
 			this.editMenuItem = new System.Windows.Forms.MenuItem();
 			this.clearTextMenuItem = new System.Windows.Forms.MenuItem();
@@ -69,7 +71,9 @@
 			this.fileMenuItem.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
             this.connectMenuItem,
             this.disconnectMenuItem,
-            this.fileMenuItemDivider,
+            this.fileMenuItemDivider1,
+            this.reconnectMenuItem,
+            this.fileMenuItemDivider2,
             this.exitMenuItem});
 			this.fileMenuItem.Text = "&File";
 			this.fileMenuItem.Popup += new System.EventHandler(this.FileMenuItemPopup);
@@ -86,14 +90,25 @@
 			this.disconnectMenuItem.Text = "&Disconnect";
 			this.disconnectMenuItem.Click += new System.EventHandler(this.DisconnectMenuItemClick);
 			// 
-			// fileMenuItemDivider
+			// fileMenuItemDivider1
 			// 
-			this.fileMenuItemDivider.Index = 2;
-			this.fileMenuItemDivider.Text = "-";
+			this.fileMenuItemDivider1.Index = 2;
+			this.fileMenuItemDivider1.Text = "-";
+			// 
+			// reconnectMenuItem
+			// 
+			this.reconnectMenuItem.Index = 3;
+			this.reconnectMenuItem.Text = "&Reconnect";
+			this.reconnectMenuItem.Click += new System.EventHandler(this.ReconnectMenuItemClick);
+			// 
+			// fileMenuItemDivider2
+			// 
+			this.fileMenuItemDivider2.Index = 4;
+			this.fileMenuItemDivider2.Text = "-";
 			// 
 			// exitMenuItem
 			// 
-			this.exitMenuItem.Index = 3;
+			this.exitMenuItem.Index = 5;
 			this.exitMenuItem.Text = "Exit";
 			this.exitMenuItem.Click += new System.EventHandler(this.ExitMenuItemClick);
 			// 
@@ -253,13 +268,15 @@
 		private System.Windows.Forms.MenuItem aboutMenuItem;
 		private System.Windows.Forms.ToolTip basicToolTip;
 		public System.Windows.Forms.TextBox inputTextBox;
-		private System.Windows.Forms.MenuItem fileMenuItemDivider;
+		private System.Windows.Forms.MenuItem fileMenuItemDivider2;
 		private System.Windows.Forms.MenuItem exitMenuItem;
 		private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
 		private System.Windows.Forms.MenuItem timeDateMenuItem;
 		private System.Windows.Forms.MenuItem clearTextMenuItem;
 		private System.Windows.Forms.MenuItem connectMenuItem;
 		private System.Windows.Forms.MenuItem disconnectMenuItem;
+		private System.Windows.Forms.MenuItem fileMenuItemDivider1;
+		private System.Windows.Forms.MenuItem reconnectMenuItem;
 	}
 }
 

@@ -11,6 +11,8 @@ namespace Notpad.Client
 {
 	static class Program
 	{
+		public const int DEFAULT_PORT = 10334;
+
 		/// <summary>
 		/// The main entry point for the application.
 		/// </summary>

@@ -74,17 +74,14 @@ namespace Notpad.Client.Util
 				for (int i = 0; i < serverkeys.Length; i++)
 				{
 					RegistryKey key = ServerKey.CreateSubKey(serverkeys[i]);
-					string _address = (string)key.GetValue("Address");
+					string address = (string)key.GetValue("Address");
 					string _port = (string)key.GetValue("Port");
 					string name = (string)key.GetValue("Name");
 
-					if (_address == null || _port == null)
+					if (address == null || _port == null)
 						continue;
 
-					if (!IPAddress.TryParse(_address, out IPAddress address))
-						continue;
-
-					if (!ushort.TryParse(_port, out ushort port))
+					if (!int.TryParse(_port, out int port))
 						continue;
 
 					servers.Add(new Server { Address = address, Port = port, Name = name });
@@ -100,7 +97,7 @@ namespace Notpad.Client.Util
 				foreach (Server server in value)
 				{
 					RegistryKey key = ServerKey.CreateSubKey(server.UniqueID);
-					key.SetValue("Address", server.Address.ToString());
+					key.SetValue("Address", server.Address);
 					key.SetValue("Port", server.Port.ToString());
 					if (!string.IsNullOrEmpty(server.Name))
 						key.SetValue("Name", server.Name);
@@ -115,8 +112,43 @@ namespace Notpad.Client.Util
 			}
 			set
 			{
-				BaseKey.SetValue("Username", value);
+				BaseKey.SetValue("Username", value, RegistryValueKind.String);
 			}
+		}
+		public static string DirectConnectAddress
+		{
+			get
+			{
+				return (string)BaseKey.GetValue("DirectConnectAddress", string.Empty);
+			}
+			set
+			{
+				BaseKey.SetValue("DirectConnectAddress", value, RegistryValueKind.String);
+			}
+		}
+		public static int DirectConnectPort
+		{
+			get
+			{
+				return (int)BaseKey.GetValue("DirectConnectPort", Program.DEFAULT_PORT);
+			}
+			set
+			{
+				BaseKey.SetValue("DirectConnectPort", value, RegistryValueKind.DWord);
+			}
+		}
+
+		public static void UpdateServerInConfig(Server server)
+		{
+			List<Server> servers = Servers.ToList();
+			int serverIndex = servers.FindIndex((s) => { return s.UniqueID == server.UniqueID; });
+
+			if (serverIndex == -1)
+				servers.Add(server);
+			else
+				servers[serverIndex] = server;
+
+			Servers = servers.ToArray();
 		}
 	}
 }

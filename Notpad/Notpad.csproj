@@ -79,6 +79,12 @@
     <Compile Include="ConnectionWindow.Designer.cs">
       <DependentUpon>ConnectionWindow.cs</DependentUpon>
     </Compile>
+    <Compile Include="DirectConnect.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DirectConnect.Designer.cs">
+      <DependentUpon>DirectConnect.cs</DependentUpon>
+    </Compile>
     <Compile Include="Net\NetClient.cs" />
     <Compile Include="Net\Packet.cs" />
     <Compile Include="Net\Server.cs" />
@@ -103,6 +109,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="ConnectionWindow.resx">
       <DependentUpon>ConnectionWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DirectConnect.resx">
+      <DependentUpon>DirectConnect.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Notpad.resx">
       <DependentUpon>Notpad.cs</DependentUpon>

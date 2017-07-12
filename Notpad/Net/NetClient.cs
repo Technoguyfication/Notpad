@@ -12,17 +12,20 @@ using System.Windows.Forms;
 
 namespace Notpad.Client.Net
 {
-	public class NetClient : TcpClient, IStreamable
+	public class NetClient : IStreamable, IDisposable
 	{
 		public object StreamReadLock { get; } = new object();
 		public object StreamWriteLock { get; } = new object();
+		public TcpClient Client { get; private set; }
 		public NetworkStream Stream
 		{
 			get
 			{
-				return GetStream();
+				return Client.GetStream();
 			}
 		}
+
+		public Server CurrentServer { get; private set; }
 
 		public string Username { get; private set; }
 		public ConnectionState CurrentState { get; private set; } = ConnectionState.DISCONNECTED;
@@ -38,30 +41,38 @@ namespace Notpad.Client.Net
 
 		private Thread ReadLoopThread;
 
-		public NetClient(string username) : base()
+		public NetClient(string username)
 		{
+			Client = new TcpClient();
 			Username = username;
 			CurrentState = ConnectionState.DISCONNECTED;
 		}
 
 		~NetClient()
 		{
-			Disconnect("Client being disposed");
+			Dispose();
+		}
+
+		public void Dispose()
+		{
+			Disconnect("Client being disposed.");
 		}
 
 		/// <summary>
 		/// Connect to the specified <see cref="IPEndPoint"/>
 		/// </summary>
 		/// <param name="endpoint"></param>
-		new public void Connect(IPEndPoint endpoint)
+		public void Connect(Server server)
 		{
-			if (CurrentState != ConnectionState.DISCONNECTED)
-				Disconnect("Connection already disconnected");
+			if ((int)CurrentState % 5 != 0)
+				Disconnect("Connecting to new server");
+
+			CurrentServer = server;
 
 			CurrentState = ConnectionState.UNVERIFIED;
 			try
 			{
-				base.Connect(endpoint);
+				Client.Connect(server.Address, server.Port);
 			}
 			catch (Exception)
 			{
@@ -91,7 +102,7 @@ namespace Notpad.Client.Net
 			try
 			{
 				if (Client.Connected)
-					Client.Disconnect(true);
+					Client.Client.Disconnect(true);
 
 				if (ReadLoopThread != null && ((int)ReadLoopThread.ThreadState % 16) == 0)
 					ReadLoopThread.Abort();
@@ -156,17 +167,15 @@ namespace Notpad.Client.Net
 					int maxOnline = payloadList.GetNextInt();
 					int online = payloadList.GetNextInt();
 
+					CurrentServer.Name = name;
+					CurrentServer.MaxOnline = maxOnline;
+					CurrentServer.Online = online;
+					CurrentServer.Status = ServerStatus.ONLINE;
+
 					ServerQueryReceived?.Invoke(this,
 						new ServerQueryReceivedEventArgs()
 						{
-							Server = new Server()
-							{
-								Name = name,
-								MaxOnline = maxOnline,
-								Online = online,
-								Status = ServerStatus.ONLINE,
-								Endpoint = (IPEndPoint)Client.RemoteEndPoint
-							}
+							Server = CurrentServer,
 						});
 					break;
 				case (byte)SCPackets.HANDSHAKE:
@@ -247,11 +256,6 @@ namespace Notpad.Client.Net
 						Packet packet = this.GetNextPacket();
 						HandlePacket(packet);
 					}
-					catch (DisconnectedException)
-					{
-						Disconnect("Connection closed by remote host.");
-						break;
-					}
 					catch (Exception e)
 					{
 						Disconnect(e.Message);
@@ -271,7 +275,7 @@ namespace Notpad.Client.Net
 					int currentBytesRead = Stream.Read(buffer, offset + bytesRead, size - bytesRead);
 					if (currentBytesRead == 0 && size != 0)
 					{
-						throw new DisconnectedException("Failed to read from network stream");
+						throw new Exception("Failed to read from network stream");
 					}
 					bytesRead += currentBytesRead;
 				}
@@ -366,15 +370,4 @@ public enum SCPackets : byte
 	READY = 0x01,
 	MESSAGE = 0x02,
 	NOTIFICATION = 0x03,
-}
-
-[Serializable]
-public class DisconnectedException : Exception
-{
-	public DisconnectedException() { }
-	public DisconnectedException(string message) : base(message) { }
-	public DisconnectedException(string message, Exception inner) : base(message, inner) { }
-	protected DisconnectedException(
-	  System.Runtime.Serialization.SerializationInfo info,
-	  System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
 }

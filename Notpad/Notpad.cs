@@ -28,9 +28,9 @@ namespace Notpad.Client
 
 		#region Network Interaction
 
-		public void ConnectToServer(IPEndPoint ep, string username)
+		public void ConnectToServer(Server server, string username)
 		{
-			PrintString($"Connecting to {ep.ToString()}");
+			PrintString($"Connecting to {server.ToString()}");
 			new Thread(() =>
 			{
 				try
@@ -48,7 +48,7 @@ namespace Notpad.Client
 						this.InvokeIfRequired(Client.Disconnect);
 					}
 
-					Client.Connect(ep);
+					Client.Connect(server);
 				}
 				catch (Exception e)
 				{
@@ -287,6 +287,7 @@ namespace Notpad.Client
 		private void FileMenuItemPopup(object sender, EventArgs e)
 		{
 			CheckDisconnectButton();
+			CheckReconnectButton();
 		}
 
 		private void CheckDisconnectButton()
@@ -297,16 +298,41 @@ namespace Notpad.Client
 				return;
 			}
 
-			if (Client.CurrentState == ConnectionState.DISCONNECTED)
+			if ((int)Client.CurrentState % 5 == 0)
 			{
 				disconnectMenuItem.Enabled = false;
 				return;
 			}
-			else
+
+			disconnectMenuItem.Enabled = true;
+		}
+
+		private void CheckReconnectButton()
+		{
+			if (Client == null)
 			{
-				disconnectMenuItem.Enabled = true;
+				reconnectMenuItem.Enabled = false;
 				return;
 			}
+
+			if ((int)Client.CurrentState % 5 != 0)
+			{
+				reconnectMenuItem.Enabled = false;
+				return;
+			}
+
+			if (Client.CurrentServer == null)
+			{
+				reconnectMenuItem.Enabled = false;
+				return;
+			}
+
+			reconnectMenuItem.Enabled = true;
+		}
+
+		private void ReconnectMenuItemClick(object sender, EventArgs e)
+		{
+			Client.Connect(Client.CurrentServer);
 		}
 	}
 }

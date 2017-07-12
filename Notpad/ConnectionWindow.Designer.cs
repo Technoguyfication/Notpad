@@ -28,18 +28,18 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
-			System.Windows.Forms.ListViewGroup listViewGroup4 = new System.Windows.Forms.ListViewGroup("Online", System.Windows.Forms.HorizontalAlignment.Left);
-			System.Windows.Forms.ListViewGroup listViewGroup5 = new System.Windows.Forms.ListViewGroup("Offline", System.Windows.Forms.HorizontalAlignment.Left);
-			System.Windows.Forms.ListViewGroup listViewGroup6 = new System.Windows.Forms.ListViewGroup("Querying...", System.Windows.Forms.HorizontalAlignment.Left);
-			System.Windows.Forms.ListViewItem listViewItem4 = new System.Windows.Forms.ListViewItem(new string[] {
+			System.Windows.Forms.ListViewGroup listViewGroup1 = new System.Windows.Forms.ListViewGroup("Online", System.Windows.Forms.HorizontalAlignment.Left);
+			System.Windows.Forms.ListViewGroup listViewGroup2 = new System.Windows.Forms.ListViewGroup("Offline", System.Windows.Forms.HorizontalAlignment.Left);
+			System.Windows.Forms.ListViewGroup listViewGroup3 = new System.Windows.Forms.ListViewGroup("Querying...", System.Windows.Forms.HorizontalAlignment.Left);
+			System.Windows.Forms.ListViewItem listViewItem1 = new System.Windows.Forms.ListViewItem(new string[] {
             "Offline Server",
             "154.894.648.265:8888",
             "0/0"}, -1);
-			System.Windows.Forms.ListViewItem listViewItem5 = new System.Windows.Forms.ListViewItem(new string[] {
+			System.Windows.Forms.ListViewItem listViewItem2 = new System.Windows.Forms.ListViewItem(new string[] {
             "Unknown Server",
             "8.8.8.8:8888",
             "0/0"}, -1);
-			System.Windows.Forms.ListViewItem listViewItem6 = new System.Windows.Forms.ListViewItem(new string[] {
+			System.Windows.Forms.ListViewItem listViewItem3 = new System.Windows.Forms.ListViewItem(new string[] {
             "Online Server",
             "127.0.0.1:2424",
             "5/25"}, -1);
@@ -82,24 +82,24 @@
             this.addressColumn,
             this.onlineColumn});
 			this.serverListView.FullRowSelect = true;
-			listViewGroup4.Header = "Online";
-			listViewGroup4.Name = "onlineGroup";
-			listViewGroup5.Header = "Offline";
-			listViewGroup5.Name = "offlineGroup";
-			listViewGroup6.Header = "Querying...";
-			listViewGroup6.Name = "queryingGroup";
+			listViewGroup1.Header = "Online";
+			listViewGroup1.Name = "onlineGroup";
+			listViewGroup2.Header = "Offline";
+			listViewGroup2.Name = "offlineGroup";
+			listViewGroup3.Header = "Querying...";
+			listViewGroup3.Name = "queryingGroup";
 			this.serverListView.Groups.AddRange(new System.Windows.Forms.ListViewGroup[] {
-            listViewGroup4,
-            listViewGroup5,
-            listViewGroup6});
-			listViewItem4.Group = listViewGroup5;
-			listViewItem4.StateImageIndex = 0;
-			listViewItem5.Group = listViewGroup6;
-			listViewItem6.Group = listViewGroup4;
+            listViewGroup1,
+            listViewGroup2,
+            listViewGroup3});
+			listViewItem1.Group = listViewGroup2;
+			listViewItem1.StateImageIndex = 0;
+			listViewItem2.Group = listViewGroup3;
+			listViewItem3.Group = listViewGroup1;
 			this.serverListView.Items.AddRange(new System.Windows.Forms.ListViewItem[] {
-            listViewItem4,
-            listViewItem5,
-            listViewItem6});
+            listViewItem1,
+            listViewItem2,
+            listViewItem3});
 			this.serverListView.Location = new System.Drawing.Point(12, 12);
 			this.serverListView.MultiSelect = false;
 			this.serverListView.Name = "serverListView";
@@ -180,6 +180,7 @@
 			this.directConnectButton.TabIndex = 3;
 			this.directConnectButton.Text = "Direct Connect";
 			this.directConnectButton.UseVisualStyleBackColor = true;
+			this.directConnectButton.Click += new System.EventHandler(this.DirectConnectButtonClick);
 			// 
 			// button1
 			// 

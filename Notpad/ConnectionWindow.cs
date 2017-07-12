@@ -17,11 +17,13 @@ namespace Notpad.Client
 	{
 		Notpad MainForm;
 		List<Thread> queryThreads = new List<Thread>();
+		DirectConnect directConnect;
 
 		public ConnectionWindow(Notpad mainForm)
 		{
 			MainForm = mainForm;
 			InitializeComponent();
+			directConnect = new DirectConnect(this);
 		}
 
 		private void WindowLoaded (object sender, EventArgs e)
@@ -39,22 +41,8 @@ namespace Notpad.Client
 			Server[] Servers = RegSettings.Servers;
 			foreach (Server server in Servers)
 			{
-				AddServerListing(server);
+				UpdateServerListing(server);
 			}
-		}
-
-		private void UpdateServer(Server server)
-		{
-			List<Server> servers = RegSettings.Servers.ToList();
-			int serverIndex = servers.FindIndex((s) => { return s.UniqueID == server.UniqueID; });
-
-			if (serverIndex == -1)
-				servers.Add(server);
-			else
-				servers[serverIndex] = server;
-
-			RegSettings.Servers = servers.ToArray();
-			CheckServerSelected();
 		}
 
 		private void QueryServers()
@@ -87,14 +75,14 @@ namespace Notpad.Client
 
 					try
 					{
-						client.Connect(server.Endpoint);
+						client.Connect(server);
 					}
 					catch (Exception)
 					{ }
 
 					void updateServer(Server s)
 					{
-						this.InvokeIfRequired(() => { AddServerListing(s); CheckServerSelected(); });
+						this.InvokeIfRequired(() => { UpdateServerListing(s); CheckServerSelected(); });
 					}
 				})
 				{
@@ -119,7 +107,7 @@ namespace Notpad.Client
 			}
 		}
 
-		private void AddServerListing(Server server)
+		private void UpdateServerListing(Server server)
 		{
 			ListViewItem item = serverListView.Items.Find((ListViewItem _item) =>
 			{
@@ -138,7 +126,7 @@ namespace Notpad.Client
 
 		private ListViewItem CreateItemForServer(Server server, bool selected)
 		{
-			ListViewItem item = new ListViewItem(new string[] { server.Name, server.Endpoint.ToString(), $"{server.Online}/{server.MaxOnline}" })
+			ListViewItem item = new ListViewItem(new string[] { server.Name, server.ToString(), $"{server.Online}/{server.MaxOnline}" })
 			{
 				Tag = server,
 				Selected = selected,
@@ -170,26 +158,31 @@ namespace Notpad.Client
 
 		private void ConnectButtonClick(object sender, EventArgs e)
 		{
+			Server server = GetSelectedServer();
+			if (server == null)
+			{
+				MessageBox.Show("No server selected");
+				return;
+			}
+			Connect(server);
+		}
+
+		public bool Connect(Server server)
+		{
+			string username = usernameTextbox.Text.Trim();
+			if (string.IsNullOrEmpty(username))
+			{
+				MessageBox.Show("Please enter a username.", "Error", MessageBoxButtons.OK);
+				return false;
+			}
+
 			MainForm.InvokeIfRequired(() =>
 			{
-				string username = usernameTextbox.Text.Trim();
-				if (string.IsNullOrEmpty(username))
-				{
-					MessageBox.Show("Please enter a username.", "Error", MessageBoxButtons.OK);
-					return;
-				}
-				Server server = GetSelectedServer();
-				if (server == null)
-				{
-					MessageBox.Show("No server selected");
-					return;
-				}
-				DialogResult = DialogResult.OK;
-				MainForm.InvokeIfRequired(() =>
-				{
-					MainForm.ConnectToServer(GetSelectedServer().Endpoint, username);
-				});
+				MainForm.ConnectToServer(server, username);
 			});
+
+			DialogResult = DialogResult.OK;
+			return true;
 		}
 
 		private Server GetSelectedServer()
@@ -233,6 +226,12 @@ namespace Notpad.Client
 		private void ServerListViewSelectionChanged(object sender, ListViewItemSelectionChangedEventArgs e)
 		{
 			CheckServerSelected();
+		}
+
+		private void DirectConnectButtonClick(object sender, EventArgs e)
+		{
+			if (directConnect.ShowDialog() == DialogResult.OK)
+				DialogResult = DialogResult.OK;
 		}
 	}
 }
