@@ -14,7 +14,7 @@ namespace Notpad.Server.Net
 		{
 			get
 			{
-				return Payload.Length + 1;	// id byte
+				return Payload.Length + 1;	// add id byte
 			}
 		}
 		public byte[] Raw
@@ -29,13 +29,6 @@ namespace Notpad.Server.Net
 			}
 		}
 
-		public Packet(byte[] buffer)
-		{
-			List<byte> bytes = new List<byte>(buffer);
-			PacketID = bytes[0];
-			Payload = bytes.Skip(1).ToArray();
-		}
-
 		public Packet(byte id, byte[] payload = null)
 		{
 			PacketID = id;
@@ -43,6 +36,13 @@ namespace Notpad.Server.Net
 				payload = new byte[0];
 
 			Payload = payload;
+		}
+
+		public Packet(byte[] buffer)
+		{
+			List<byte> bytes = new List<byte>(buffer);
+			PacketID = bytes[0];
+			Payload = bytes.Skip(1).ToArray();
 		}
 	}
 }

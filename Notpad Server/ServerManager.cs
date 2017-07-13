@@ -34,7 +34,14 @@ namespace Notpad.Server
 			Console.WriteLine($"Now listening on {Program.Settings.EndPoint.ToString()}");
 			while (true)
 			{
-				ParseCommand(Console.ReadLine());
+				try
+				{
+					ParseCommand(Console.ReadLine());
+				}
+				catch (Exception e)
+				{
+					Console.WriteLine($"Error handling command: {e.Message}");
+				}
 			}
 		}
 
@@ -54,7 +61,7 @@ namespace Notpad.Server
 						Clients.BroadcastToClients(RemoteClient.GetMessagePacket(true, args));
 						break;
 					case "send!":
-
+						Clients.BroadcastToClients(RemoteClient.GetNotificationPacket(NotificationLevel.NONE, args));
 						break;
 					default:
 						Console.WriteLine($"Command not found: {cmd}");

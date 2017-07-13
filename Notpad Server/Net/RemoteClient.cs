@@ -217,6 +217,16 @@ namespace Notpad.Server.Net
 			return new Packet((int)SCPackets.READY, builder.ToArray());
 		}
 
+		public static Packet GetNotificationPacket(NotificationLevel level, string message)
+		{
+			List<byte> builder = new List<byte>();
+			builder.AddRange(BitConverter.GetBytes((int)level).CheckEndianness());
+			byte[] messageRaw = Encoding.Unicode.GetBytes(message);
+			builder.AddRange(BitConverter.GetBytes(messageRaw.Length).CheckEndianness());
+			builder.AddRange(messageRaw);
+			return new Packet((byte)SCPackets.NOTIFICATION, builder.ToArray());
+		}
+
 		#endregion
 	}
 
@@ -261,5 +271,13 @@ namespace Notpad.Server.Net
 		MESSAGE = 0x02,
 		NOTIFICATION = 0x03,
 		DISCONNECT = 0xF0,
+	}
+
+	public enum NotificationLevel : int
+	{
+		NONE = 0,
+		INFO = 1,
+		WARN = 2,
+		ERROR = 3,
 	}
 }

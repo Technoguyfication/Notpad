@@ -50,7 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IStreamable.cs" />
-    <Compile Include="Net\NetClient.cs" />
+    <Compile Include="Net\RemoteClient.cs" />
     <Compile Include="Net\ClientCollection.cs" />
     <Compile Include="Net\Packet.cs" />
     <Compile Include="Program.cs" />
