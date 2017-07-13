@@ -58,10 +58,27 @@ namespace Notpad.Server
 				switch (cmd)
 				{
 					case "send":
-						Clients.BroadcastToClients(RemoteClient.GetMessagePacket(true, args));
+						Clients.SendMessage(true, args);
 						break;
 					case "send!":
-						Clients.BroadcastToClients(RemoteClient.GetNotificationPacket(NotificationLevel.NONE, args));
+						int clientsAffected = Clients.BroadcastToClients(RemoteClient.GetNotificationPacket(NotificationLevel.NONE, args));
+						Console.WriteLine($"Sent \"{args}\" to {clientsAffected} clients.");
+						break;
+					case "online":
+						Console.WriteLine($"{Clients.UsersOnline} clients online out of {Program.Settings.MaxUsers} maximum.");
+						break;
+					case "list":
+						string[] usernames;
+						lock (Clients)
+						{
+							usernames = new string[Clients.Count];
+							for (int i = 0; i < Clients.Count; i++)
+							{
+								usernames[i] = Clients[i].Username;
+							}
+						}
+						string clients = string.Join(", ", usernames);
+						Console.WriteLine(clients);
 						break;
 					default:
 						Console.WriteLine($"Command not found: {cmd}");

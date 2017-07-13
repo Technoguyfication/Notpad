@@ -244,6 +244,7 @@
 			this.Name = "Notpad";
 			this.Text = "Notpad";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.WindowClosing);
+			this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.WindowClosed);
 			this.Load += new System.EventHandler(this.WindowLoaded);
 			this.ResizeEnd += new System.EventHandler(this.WindowResized);
 			this.ResumeLayout(false);

@@ -17,11 +17,27 @@ namespace Notpad.Server.Net
 		public event ClientPacketReceivedEventHandler PacketReceived;
 		public delegate void ClientDisconnectedEventHandler(object sender, ClientDisconnectedEventArgs e);
 		public event ClientDisconnectedEventHandler Disconnected;
+		public event EventHandler ClientReady;
 
 		public readonly object StreamReadLock = new object();
 		public readonly object StreamWriteLock = new object();
 
-		public string Username { get; set; }
+		private string _username = null;
+		public string Username
+		{
+			get
+			{
+				if (_username != null)
+					return _username;
+				else
+					return ToString();
+			}
+			set
+			{
+				_username = value;
+			}
+		}
+		public const string SPECIAL_CHAR_REGEX = @"[^\w]";
 
 		public ClientConnectionState CurrentState = ClientConnectionState.DISCONNECTED;
 
@@ -35,7 +51,6 @@ namespace Notpad.Server.Net
 				return Client.GetStream();
 			}
 		}
-
 		public string UniqueID
 		{
 			get
@@ -60,25 +75,37 @@ namespace Notpad.Server.Net
 			Dispose();
 		}
 
+		public void Dispose()
+		{
+			if ((int)CurrentState % 5 != 0)
+				Disconnect(false);
+
+			if (Client != null)
+				Client.Close();
+			Client = null;
+		}
+
 		public override string ToString()
 		{
 			return Endpoint.ToString();
 		}
 
-		public void Dispose()
+		public void Disconnect(bool sendToClient, string reason = "")
 		{
 			if ((int)CurrentState % 5 != 0)
-				Disconnect();
+				ChangeClientState(ClientConnectionState.DISCONNECTED);
+			else
+				return;
 
-			Client.Close();
-			Client = null;
-		}
-
-		public void Disconnect(string reason = null)
-		{
 			try
 			{
-				Write(GetDisconnectPacket());
+				if (sendToClient)
+				{
+					lock (StreamWriteLock)
+					{
+						Write(GetDisconnectPacket(reason));
+					}
+				}
 			}
 			catch (Exception) { }
 
@@ -89,22 +116,18 @@ namespace Notpad.Server.Net
 			}
 			catch (Exception) { }
 
-			if (ListenThread != null)
-				ListenThread.Abort();
-
-			if ((int)CurrentState % 5 != 0)
+			Disconnected?.Invoke(this, new ClientDisconnectedEventArgs()
 			{
-				ChangeClientState(ClientConnectionState.DISCONNECTED);
-				Disconnected?.Invoke(this, new ClientDisconnectedEventArgs()
-				{
-					Reason = reason,
-					Client = this,
-				});
-			}
+				Reason = reason,
+				Client = this,
+			});
 		}
 
 		public void ChangeClientState(ClientConnectionState state)
 		{
+			if (CurrentState != state && state == ClientConnectionState.READY)
+				ClientReady?.Invoke(this, EventArgs.Empty);
+
 			CurrentState = state;
 			Console.WriteLine($"Client {ToString()} state changed to ({state.ToString()})");
 		}
@@ -155,9 +178,16 @@ namespace Notpad.Server.Net
 					{
 						packet = this.GetNextPacket();
 					}
-					catch (Exception e)
+					catch (Exception)
 					{
-						Disconnect(e.Message);
+						new Thread(() =>
+						{
+							Disconnect(false, "Connection closed by remote host");
+						})
+						{
+							Name = "Client Disconnect Thread",
+							IsBackground = true,
+						}.Start();
 						return;
 					}
 					new Thread(() =>
@@ -178,9 +208,13 @@ namespace Notpad.Server.Net
 
 		#region Packet Factory
 
-		public static Packet GetDisconnectPacket()
+		public static Packet GetDisconnectPacket(string reason)
 		{
-			return new Packet((byte)SCPackets.DISCONNECT);
+			List<byte> builder = new List<byte>();
+			byte[] reasonRaw = Encoding.Unicode.GetBytes(reason);
+			builder.AddRange(BitConverter.GetBytes(reasonRaw.Length).CheckEndianness());
+			builder.AddRange(reasonRaw);
+			return new Packet((byte)SCPackets.DISCONNECT, builder.ToArray());
 		}
 
 		public static Packet GetQueryPacket(string name, int online, int maxOnline)
@@ -207,14 +241,9 @@ namespace Notpad.Server.Net
 			return new Packet((byte)SCPackets.MESSAGE, builder.ToArray());
 		}
 
-		public static Packet GetReadyPacket(bool success, string message = "")
+		public static Packet GetReadyPacket()
 		{
-			List<byte> builder = new List<byte>();
-			builder.AddRange(BitConverter.GetBytes(success));
-			byte[] messageRaw = Encoding.Unicode.GetBytes(message);
-			builder.AddRange(BitConverter.GetBytes(messageRaw.Length).CheckEndianness());
-			builder.AddRange(messageRaw);
-			return new Packet((int)SCPackets.READY, builder.ToArray());
+			return new Packet((byte)SCPackets.READY);
 		}
 
 		public static Packet GetNotificationPacket(NotificationLevel level, string message)
@@ -256,7 +285,6 @@ namespace Notpad.Server.Net
 	{
 		QUERY = 0xFF,
 
-		HANDSHAKE = 0x00,
 		IDENTIFY = 0x01,
 		MESSAGE = 0x02,
 		DISCONNECT = 0xF0,
@@ -266,7 +294,6 @@ namespace Notpad.Server.Net
 	{
 		QUERY = 0xFF,
 
-		HANDSHAKE = 0x00,
 		READY = 0x01,
 		MESSAGE = 0x02,
 		NOTIFICATION = 0x03,

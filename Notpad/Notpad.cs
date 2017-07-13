@@ -51,7 +51,7 @@ namespace Notpad.Client
 
 					if (Client.CurrentState != ClientConnectionState.DISCONNECTED)
 					{
-						this.InvokeIfRequired(() => { Client.Disconnect(null); });
+						this.InvokeIfRequired(() => { Client.Disconnect(reason: null); });
 					}
 
 					Client.Connect(server);
@@ -319,7 +319,7 @@ namespace Notpad.Client
 		private void DisconnectMenuItemClick(object sender, EventArgs e)
 		{
 			if (Client != null && Client.CurrentState != ClientConnectionState.DISCONNECTED)
-				Client.Disconnect(null);
+				Client.Disconnect(reason: null);
 		}
 
 		private void FileMenuItemPopup(object sender, EventArgs e)
@@ -371,6 +371,12 @@ namespace Notpad.Client
 		private void ReconnectMenuItemClick(object sender, EventArgs e)
 		{
 			ConnectToServer(Client.CurrentServer, Client.Username);
+		}
+
+		private void WindowClosed(object sender, FormClosedEventArgs e)
+		{
+			if (Client != null)
+				Client.Dispose();
 		}
 	}
 }

@@ -1,13 +1,9 @@
-﻿using Notpad.Client.Net;
-using Notpad.Client.Util;
+﻿using Notpad.Client.Util;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Notpad.Client.Net
@@ -56,7 +52,7 @@ namespace Notpad.Client.Net
 		public void Dispose()
 		{
 			if ((int)CurrentState % 5 != 0)
-				Disconnect("Client being disposed.");
+				Disconnect(false, "Client being disposed.");
 
 			ListenThread.Abort();
 
@@ -71,20 +67,20 @@ namespace Notpad.Client.Net
 		public void Connect(Server server)
 		{
 			if ((int)CurrentState % 5 != 0)
-				Disconnect("Connecting to new server");
+				Disconnect(true);
 
 			Client = new TcpClient();
 
 			CurrentServer = server;
 
-			CurrentState = ClientConnectionState.UNVERIFIED;
+			CurrentState = ClientConnectionState.CONNECTED;
 			try
 			{
 				Client.Connect(server.Address, server.Port);
 			}
 			catch (Exception)
 			{
-				Disconnect("Failed to connect to server");
+				Disconnect(false, "Failed to connect to server");
 				throw;
 			}
 
@@ -102,40 +98,39 @@ namespace Notpad.Client.Net
 			Connected?.Invoke(this, EventArgs.Empty);
 		}
 
-		public void Disconnect(string reason)
+		public void Disconnect(bool sendToServer, string reason = "Client disconnected")
 		{
+			if ((int)CurrentState % 5 != 0)
+				CurrentState = ClientConnectionState.DISCONNECTED;
+			else
+				return;
+
 			try
 			{
-				Write(GetDisconnectPacket());
+				if (sendToServer)
+					Write(GetDisconnectPacket(reason));
 			}
 			catch (Exception)
 			{ }
 
 			try
 			{
-				Client.Close();
-
-				if (ListenThread != null && ((int)ListenThread.ThreadState % 16) == 0)
-					ListenThread.Abort();
+				if (Client.Client.Connected)
+					Client.Close();
 			}
 			catch (Exception e)
+			{ }
+
+			ConnectionDisconnected?.Invoke(this, new ConnectionDisconnectedEventArgs()
 			{
-				SendMessage(MessageType.CHAT, $"Error closing connection: {e.Message}");
-			}
-			if (CurrentState != ClientConnectionState.DISCONNECTED)
-			{
-				CurrentState = ClientConnectionState.DISCONNECTED;
-				ConnectionDisconnected?.Invoke(this, new ConnectionDisconnectedEventArgs()
-				{
-					Reason = reason,
-					Client = this,
-				});
-			}
+				Reason = reason,
+				Client = this,
+			});
 		}
 
 		#region Packet Factory
 
-		public static Packet GetDisconnectPacket()
+		public static Packet GetDisconnectPacket(string reason)
 		{
 			return new Packet((byte)CSPackets.DISCONNECT);
 		}
@@ -143,11 +138,6 @@ namespace Notpad.Client.Net
 		public static Packet GetQueryPacket()
 		{
 			return new Packet((byte)CSPackets.QUERY);
-		}
-
-		public static Packet GetHandshakePacket()
-		{
-			return new Packet((byte)CSPackets.HANDSHAKE);
 		}
 
 		public static Packet GetIdentifyPacket(string username)
@@ -196,12 +186,6 @@ namespace Notpad.Client.Net
 							Client = this
 						});
 					break;
-				case (byte)SCPackets.HANDSHAKE:
-					if (CurrentState != ClientConnectionState.UNVERIFIED)
-						break;
-
-					Write(GetIdentifyPacket(Username));
-					break;
 				case (byte)SCPackets.MESSAGE:
 					if (CurrentState != ClientConnectionState.READY)
 						break;
@@ -217,18 +201,9 @@ namespace Notpad.Client.Net
 						author);
 					break;
 				case (byte)SCPackets.READY:
-					if (CurrentState != ClientConnectionState.UNVERIFIED)
+					if (CurrentState != ClientConnectionState.CONNECTED)
 						break;
 
-					bool ready = BitConverter.ToBoolean(payloadList.GetByteInByteCollection(), 0);
-
-					if (!ready)
-					{
-						int reasonLength = payloadList.GetNextInt();
-						string reason = Encoding.Unicode.GetString(payloadList.GetBytes(reasonLength));
-						Disconnect($"Server refused connection: {reason}");
-						break;
-					}
 					CurrentState = ClientConnectionState.READY;
 					ClientReady?.Invoke(this, EventArgs.Empty);
 					break;
@@ -246,6 +221,10 @@ namespace Notpad.Client.Net
 					int level = payloadList.GetNextInt();
 					int contentLength = payloadList.GetNextInt();
 					string content = Encoding.Unicode.GetString(payloadList.GetBytes(contentLength));
+
+					if (level > 4)	// invalid level
+						break;
+
 					SendMessage(new MessageEventArgs()
 					{
 						Content = content,
@@ -255,7 +234,7 @@ namespace Notpad.Client.Net
 					});
 					break;
 				case (byte)SCPackets.DISCONNECT:
-					Disconnect("Server closed connection.");
+					Disconnect(false, "Server closed connection.");
 					break;
 				default:
 					break;
@@ -287,7 +266,7 @@ namespace Notpad.Client.Net
 					}
 					catch (Exception e)
 					{
-						Disconnect(e.Message);
+						Disconnect(false, "Connection closed by remote host.");
 						break;
 					}
 				}
@@ -381,7 +360,7 @@ namespace Notpad.Client.Net
 	public enum ClientConnectionState : int
 	{
 		DISCONNECTED = 5,
-		UNVERIFIED = 8,     // attempting to start full connection
+		CONNECTED = 8,     // attempting to start full connection
 		READY = 16,         // client ready
 	}
 
@@ -389,7 +368,6 @@ namespace Notpad.Client.Net
 	{
 		QUERY = 0xFF,
 
-		HANDSHAKE = 0x00,
 		IDENTIFY = 0x01,
 		MESSAGE = 0x02,
 		DISCONNECT = 0xF0,
@@ -399,7 +377,6 @@ namespace Notpad.Client.Net
 	{
 		QUERY = 0xFF,
 
-		HANDSHAKE = 0x00,
 		READY = 0x01,
 		MESSAGE = 0x02,
 		NOTIFICATION = 0x03,

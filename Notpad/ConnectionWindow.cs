@@ -7,6 +7,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -15,6 +16,8 @@ namespace Notpad.Client
 {
 	public partial class ConnectionWindow : Form
 	{
+		const string SPECIAL_CHAR_FILTER = @"[^\w]";
+
 		Notpad MainForm;
 		List<Thread> queryThreads = new List<Thread>();
 		DirectConnect directConnect;
@@ -174,10 +177,11 @@ namespace Notpad.Client
 
 		public void Connect(Server server)
 		{
-			string username = usernameTextbox.Text.Trim();
-			if (string.IsNullOrEmpty(username))
+			Regex specialChars = new Regex(SPECIAL_CHAR_FILTER);
+			string username = usernameTextbox.Text;
+			if (string.IsNullOrEmpty(username) || specialChars.IsMatch(username) || username.Length > 20)
 			{
-				MessageBox.Show("Please enter a username.", "Error", MessageBoxButtons.OK);
+				MessageBox.Show("Please enter a valid username.\n\nUsernames must be alphanumeric and no longer than 20 characters.", "Error", MessageBoxButtons.OK);
 				return;
 			}
 

@@ -13,7 +13,7 @@ namespace Notpad.Server
 	{
 		public string Name { get; set; } = "Notpad Server";
 		public string Address { get; set; } = IPAddress.Any.ToString();
-		public int Port { get; set; } = 10334;
+		public int Port { get; set; } = 1334;
 		public int MaxUsers { get; set; } = 25;
 
 		[JsonIgnore]

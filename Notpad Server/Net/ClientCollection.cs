@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,20 +18,44 @@ namespace Notpad.Server.Net
 			}
 		}
 
-		public void BroadcastToClients(Packet packet)
+		public int BroadcastToClients(Packet packet)
 		{
-			BroadcastToClients(packet.Raw);
+			return BroadcastToClients(packet.Raw);
 		}
 
-		public void BroadcastToClients(byte[] buffer)
+		public int SendMessage(bool server, string message, string author = "")
 		{
+			if (server)
+				Console.WriteLine($"(GLOBAL): {message}");
+			else
+				Console.WriteLine($"Message: ({author}) {message}");
+
+			return BroadcastToClients(RemoteClient.GetMessagePacket(server, message, author));
+		}
+
+		public int BroadcastToClients(byte[] buffer)
+		{
+			List<RemoteClient> brokenClients = new List<RemoteClient>();
+			int affected = 0;
 			lock (this)
 			{
 				foreach (RemoteClient client in this)
 				{
-					client.Write(buffer);
+					try
+					{
+						client.Write(buffer);
+						affected++;
+					}
+					catch (Exception)
+					{
+						brokenClients.Add(client);
+					}
 				}
 			}
+			foreach (RemoteClient client in brokenClients)
+				client.Disconnect(false, "Client connection closed unexpectedly.");
+
+			return affected;
 		}
 
 		public void AddClient(RemoteClient client)
@@ -45,6 +70,7 @@ namespace Notpad.Server.Net
 
 			client.Disconnected += ClientDisconnected;
 			client.PacketReceived += ClientPacketReceived;
+			client.ClientReady += ClientReady;
 
 			if (client.ListenThread != null)
 				client.ListenThread.Abort();
@@ -73,23 +99,31 @@ namespace Notpad.Server.Net
 			});
 		}
 
-		public void RemoveClient(RemoteClient client)
+		public void RemoveClient(RemoteClient client, string reason = null)
 		{
-			if (!Exists(client))
-				return;
+			lock (this)
+			{
+				if (!Exists(client))
+					return;
 
-			RemoveClientAt(GetClientIndex(client));
+				RemoveClientAt(GetClientIndex(client), reason);
+			}
 		}
 
-		public void RemoveClientAt(int index)
+		public void RemoveClientAt(int index, string reason = null)
 		{
-			if (Count >= index)
+			if (Count > index)
 			{
 				lock (this)
 				{
 					RemoveAt(index);
 				}
 			}
+		}
+
+		private void ClientReady(object sender, EventArgs e)
+		{
+			SendMessage(true, $"{((RemoteClient)sender).Username} has connected.");
 		}
 
 		private void ClientPacketReceived(object sender, ClientPacketReceivedEventArgs e)
@@ -99,10 +133,16 @@ namespace Notpad.Server.Net
 
 		private void ClientDisconnected(object sender, ClientDisconnectedEventArgs e)
 		{
-			string clientName = e.Client.ToString();
+			string clientName = e.Client.Username;
 			RemoveClient(e.Client);
 			e.Client.Dispose();
-			Console.WriteLine($"Client {clientName} disconnected.");
+			announceDisconnect($"\"{clientName}\" disconnected: {e.Reason ?? "Unknown"}");
+
+			void announceDisconnect(string reason)
+			{
+				Console.WriteLine(reason);
+				SendMessage(true, reason);
+			}
 		}
 
 		private void HandlePacket(Packet packet, RemoteClient client)
@@ -130,8 +170,7 @@ namespace Notpad.Server.Net
 					int messageLength = payload.GetNextInt();
 					string message = Encoding.Unicode.GetString(payload.GetBytes(messageLength));
 
-					Console.WriteLine($"MESSAGE: ({client.Username}): {message}");
-					BroadcastToClients(RemoteClient.GetMessagePacket(false, message, client.Username));
+					SendMessage(false, message, client.Username);
 					break;
 				case (byte)CSPackets.IDENTIFY:
 					if (client.CurrentState != ClientConnectionState.CONNECTED)
@@ -139,6 +178,14 @@ namespace Notpad.Server.Net
 
 					int usernameLength = payload.GetNextInt();
 					string username = Encoding.Unicode.GetString(payload.GetBytes(usernameLength));
+
+					Regex specialChars = new Regex(RemoteClient.SPECIAL_CHAR_REGEX);
+
+					if (username.Length > 20 || specialChars.IsMatch(username))
+					{
+						client.Username = $"({specialChars.Replace(username.Truncate(20), string.Empty)})";
+						client.Disconnect(true, "Invalid username.");
+					}
 
 					lock (this)
 					{
@@ -150,18 +197,21 @@ namespace Notpad.Server.Net
 
 						if (usernames.Contains(username))
 						{
-							client.Write(RemoteClient.GetReadyPacket(false, "Username already being used"));
+							client.Username = $"({username})";
+							client.Disconnect(true, "Username already in use.");
 							break;
 						}
 					}
 
 					client.Username = username;
-					client.Write(RemoteClient.GetReadyPacket(true));
+					client.Write(RemoteClient.GetReadyPacket());
 					Console.WriteLine($"Client {client.ToString()} identified as \"{client.Username}\"");
 					client.ChangeClientState(ClientConnectionState.READY);
 					break;
 				case (byte)CSPackets.DISCONNECT:
-					client.Disconnect("Client disconnected.");
+					int reasonLength = payload.GetNextInt();
+					string reason = Encoding.Unicode.GetString(payload.GetBytes(reasonLength));
+					client.Disconnect(false, "Client disconnected from server.");
 					break;
 			}
 		}
