@@ -10,13 +10,10 @@ using System.Threading;
 
 namespace Notpad.Server
 {
-	class Program
+	public static class Program
 	{
 		public static readonly string ConfigPath = Path.GetFullPath("config.json");
 		public static ServerSettings Settings;
-
-		public TcpListener Listener { get; private set; }
-		public Thread ListenThread { get; private set; }
 
 		static void Main(string[] args)
 		{
@@ -43,29 +40,54 @@ namespace Notpad.Server
 
 			Settings = JsonConvert.DeserializeObject<ServerSettings>(configJson);
 
-			new Program().Start();
+			new ServerManager().Start();
 		}
 
-		public void Start()
-		{
-			Listener = new TcpListener(Settings.IPAddress, Settings.Port);
-			ListenThread = new Thread(ClientListenLoop)
-			{
-				IsBackground = false,
-				Name = "Client Listen Loop",
-			};
 
-			ListenThread.Start();
-			Console.WriteLine($"Now listening on {Settings.EndPoint.ToString()}");
+		public static byte[] CheckEndianness(this byte[] buffer)
+		{
+			if (BitConverter.IsLittleEndian)
+				return buffer.Reverse().ToArray();
+			else
+				return buffer;
 		}
 
-		private void ClientListenLoop()
+		public static byte GetByte(this List<byte> bytes, int index = 0)
 		{
-			Listener.Start();
-			while (true)
-			{
-				Client client = new Client(Listener.AcceptTcpClient());
-			}
+			byte value = bytes.GetBytes(1, index)[0];
+			return value;
+		}
+
+		public static byte[] GetByteInByteCollection(this List<byte> bytes, int index = 0)
+		{
+			return new byte[1] { bytes.GetByte(index) };
+		}
+
+		public static byte[] GetBytes(this List<byte> bytes, int count, int index = 0)
+		{
+			byte[] value = bytes.Skip(index).Take(count).ToArray();
+			bytes.RemoveRange(index, count);
+			return value;
+		}
+
+		public static int GetNextInt(this List<byte> bytes)
+		{
+			return BitConverter.ToInt32(bytes.GetBytes(4).CheckEndianness(), 0);
+		}
+
+		public static int GetNextInt(this IStreamable stream)
+		{
+			byte[] bytes = new byte[4];
+			stream.Read(bytes, 0, 4);
+			return bytes.ToList().GetNextInt();
+		}
+
+		public static Packet GetNextPacket(this IStreamable stream)
+		{
+			int length = stream.GetNextInt();
+			byte[] buffer = new byte[length];
+			stream.Read(buffer, 0, length);
+			return new Packet(buffer);
 		}
 	}
 }

@@ -43,7 +43,7 @@ namespace Notpad.Client
 						Client.ConnectionDisconnected += ClientConnectionDisconnect;
 					}
 
-					if (Client.CurrentState != ConnectionState.DISCONNECTED)
+					if (Client.CurrentState != ClientConnectionState.DISCONNECTED)
 					{
 						this.InvokeIfRequired(Client.Disconnect);
 					}
@@ -280,7 +280,7 @@ namespace Notpad.Client
 
 		private void DisconnectMenuItemClick(object sender, EventArgs e)
 		{
-			if (Client != null && Client.CurrentState != ConnectionState.DISCONNECTED)
+			if (Client != null && Client.CurrentState != ClientConnectionState.DISCONNECTED)
 				Client.Disconnect();
 		}
 

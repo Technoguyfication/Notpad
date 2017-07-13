@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Notpad.Server
 {
 	[Serializable]
-	class ServerSettings
+	public class ServerSettings
 	{
 		public string Name { get; set; } = "Notpad Server";
 		public string Address { get; set; } = IPAddress.Any.ToString();

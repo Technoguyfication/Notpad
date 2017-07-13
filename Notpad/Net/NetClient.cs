@@ -28,7 +28,7 @@ namespace Notpad.Client.Net
 		public Server CurrentServer { get; private set; }
 
 		public string Username { get; private set; }
-		public ConnectionState CurrentState { get; private set; } = ConnectionState.DISCONNECTED;
+		public ClientConnectionState CurrentState { get; private set; } = ClientConnectionState.DISCONNECTED;
 
 		public delegate void MessageEventHandler(object sender, MessageEventArgs e);
 		public delegate void ServerQueryReceivedEventHandler(object sender, ServerQueryReceivedEventArgs e);
@@ -39,13 +39,13 @@ namespace Notpad.Client.Net
 		public event EventHandler ConnectionEstablished;
 		public event ConnectionDisconnectedEventHandler ConnectionDisconnected;
 
-		private Thread ReadLoopThread;
+		private Thread ListenThread;
 
 		public NetClient(string username)
 		{
 			Client = new TcpClient();
 			Username = username;
-			CurrentState = ConnectionState.DISCONNECTED;
+			CurrentState = ClientConnectionState.DISCONNECTED;
 		}
 
 		~NetClient()
@@ -55,7 +55,13 @@ namespace Notpad.Client.Net
 
 		public void Dispose()
 		{
-			Disconnect("Client being disposed.");
+			if ((int)CurrentState % 5 != 0)
+				Disconnect("Client being disposed.");
+
+			ListenThread.Abort();
+
+			Client.Close();
+			Client = null;
 		}
 
 		/// <summary>
@@ -69,7 +75,7 @@ namespace Notpad.Client.Net
 
 			CurrentServer = server;
 
-			CurrentState = ConnectionState.UNVERIFIED;
+			CurrentState = ClientConnectionState.UNVERIFIED;
 			try
 			{
 				Client.Connect(server.Address, server.Port);
@@ -80,16 +86,16 @@ namespace Notpad.Client.Net
 				throw;
 			}
 
-			if (ReadLoopThread != null && ((int)ReadLoopThread.ThreadState % 16) == 0)
-				ReadLoopThread.Abort();
+			if (ListenThread != null)
+				ListenThread.Abort();
 
-			ReadLoopThread = new Thread(ReadLoop)
+			ListenThread = new Thread(ReadLoop)
 			{
 				IsBackground = true,
 				Name = "Network Listener",
 			};
 
-			ReadLoopThread.Start();
+			ListenThread.Start();
 		}
 
 		public void Disconnect()
@@ -104,19 +110,20 @@ namespace Notpad.Client.Net
 				if (Client.Connected)
 					Client.Client.Disconnect(true);
 
-				if (ReadLoopThread != null && ((int)ReadLoopThread.ThreadState % 16) == 0)
-					ReadLoopThread.Abort();
+				if (ListenThread != null && ((int)ListenThread.ThreadState % 16) == 0)
+					ListenThread.Abort();
 			}
 			catch (Exception e)
 			{
 				SendMessage(MessageType.CHAT, $"Error closing connection: {e.Message}");
 			}
-			if (CurrentState != ConnectionState.DISCONNECTED)
+			if (CurrentState != ClientConnectionState.DISCONNECTED)
 			{
-				CurrentState = ConnectionState.DISCONNECTED;
+				CurrentState = ClientConnectionState.DISCONNECTED;
 				ConnectionDisconnected?.Invoke(this, new ConnectionDisconnectedEventArgs()
 				{
-					Reason = reason
+					Reason = reason,
+					Client = this,
 				});
 			}
 		}
@@ -176,16 +183,17 @@ namespace Notpad.Client.Net
 						new ServerQueryReceivedEventArgs()
 						{
 							Server = CurrentServer,
+							Client = this
 						});
 					break;
 				case (byte)SCPackets.HANDSHAKE:
-					if (CurrentState != ConnectionState.UNVERIFIED)
+					if (CurrentState != ClientConnectionState.UNVERIFIED)
 						break;
 
 					Write(GetIdentifyPacket(Username));
 					break;
 				case (byte)SCPackets.MESSAGE:
-					if (CurrentState != ConnectionState.READY)
+					if (CurrentState != ClientConnectionState.READY)
 						break;
 
 					bool broadcast = BitConverter.ToBoolean(payloadList.GetByteInByteCollection().CheckEndianness(), 0);
@@ -199,7 +207,7 @@ namespace Notpad.Client.Net
 						author);
 					break;
 				case (byte)SCPackets.READY:
-					if (CurrentState != ConnectionState.UNVERIFIED)
+					if (CurrentState != ClientConnectionState.UNVERIFIED)
 						break;
 
 					bool ready = BitConverter.ToBoolean(payloadList.GetByteInByteCollection(), 0);
@@ -211,11 +219,11 @@ namespace Notpad.Client.Net
 						Disconnect($"Server refused connection: {reason}");
 						break;
 					}
-					CurrentState = ConnectionState.READY;
+					CurrentState = ClientConnectionState.READY;
 					ConnectionEstablished?.Invoke(this, EventArgs.Empty);
 					break;
 				case (byte)SCPackets.NOTIFICATION:
-					if (CurrentState != ConnectionState.READY)
+					if (CurrentState != ClientConnectionState.READY)
 						break;
 
 					MessageBoxIcon[] iconMap = new MessageBoxIcon[]
@@ -233,6 +241,7 @@ namespace Notpad.Client.Net
 						Content = content,
 						Type = MessageType.NOTIFICATION,
 						NotificationIcon = iconMap[level],
+						Client = this,
 					});
 					break;
 				default:
@@ -247,7 +256,7 @@ namespace Notpad.Client.Net
 
 		private void ReadLoop()
 		{
-			while (CurrentState != ConnectionState.DISCONNECTED)
+			while (CurrentState != ClientConnectionState.DISCONNECTED)
 			{
 				lock (StreamReadLock)
 				{
@@ -267,17 +276,17 @@ namespace Notpad.Client.Net
 
 		public void Read(byte[] buffer, int offset, int size)
 		{
+			int bytesRead = 0;
 			lock (StreamReadLock)
 			{
-				int bytesRead = 0;
 				while (bytesRead < size)
 				{
-					int currentBytesRead = Stream.Read(buffer, offset + bytesRead, size - bytesRead);
-					if (currentBytesRead == 0 && size != 0)
+					int newBytesRead = Stream.Read(buffer, offset + bytesRead, size - bytesRead);
+					if (newBytesRead == 0 && size != 0)
 					{
 						throw new Exception("Failed to read from network stream");
 					}
-					bytesRead += currentBytesRead;
+					bytesRead += newBytesRead;
 				}
 			}
 		}
@@ -306,7 +315,8 @@ namespace Notpad.Client.Net
 			{
 				Type = type,
 				Content = content,
-				Author = author
+				Author = author,
+				Client = this,
 			});
 		}
 
@@ -315,59 +325,62 @@ namespace Notpad.Client.Net
 			Message?.Invoke(this, e);
 		}
 	}
-}
 
-public class MessageEventArgs : EventArgs
-{
-	public MessageType Type { get; set; }
-	public string Author { get; set; }
-	public string Content { get; set; }
-	public MessageBoxIcon NotificationIcon { get; set; }
-}
+	public class MessageEventArgs : EventArgs
+	{
+		public MessageType Type { get; set; }
+		public string Author { get; set; }
+		public string Content { get; set; }
+		public MessageBoxIcon NotificationIcon { get; set; }
+		public NetClient Client;
+	}
 
-public class ServerQueryReceivedEventArgs : EventArgs
-{
-	public Server Server;
-}
+	public class ServerQueryReceivedEventArgs : EventArgs
+	{
+		public Server Server;
+		public NetClient Client;
+	}
 
-public class ConnectionDisconnectedEventArgs : EventArgs
-{
-	public string Reason;
-}
+	public class ConnectionDisconnectedEventArgs : EventArgs
+	{
+		public NetClient Client;
+		public string Reason;
+	}
 
-public enum MessageType
-{
-	BROADCAST,
-	RAW,
-	CHAT,
-	NOTIFICATION,
-}
+	public enum MessageType
+	{
+		BROADCAST,
+		RAW,
+		CHAT,
+		NOTIFICATION,
+	}
 
-/// <summary>
-/// Statuses divisible by 5 are not open, divisible by 8 are open.
-/// </summary>
-public enum ConnectionState : int
-{
-	DISCONNECTED = 5,
-	UNVERIFIED = 8,     // attempting to start full connection
-	READY = 16,         // client ready
-}
+	/// <summary>
+	/// Statuses divisible by 5 are not open, divisible by 8 are open.
+	/// </summary>
+	public enum ClientConnectionState : int
+	{
+		DISCONNECTED = 5,
+		UNVERIFIED = 8,     // attempting to start full connection
+		READY = 16,         // client ready
+	}
 
-public enum CSPackets : byte
-{
-	QUERY = 0xFF,
+	public enum CSPackets : byte
+	{
+		QUERY = 0xFF,
 
-	HANDSHAKE = 0x00,
-	IDENTIFY = 0x01,
-	MESSAGE = 0x02,
-}
+		HANDSHAKE = 0x00,
+		IDENTIFY = 0x01,
+		MESSAGE = 0x02,
+	}
 
-public enum SCPackets : byte
-{
-	QUERY = 0xFF,
+	public enum SCPackets : byte
+	{
+		QUERY = 0xFF,
 
-	HANDSHAKE = 0x00,
-	READY = 0x01,
-	MESSAGE = 0x02,
-	NOTIFICATION = 0x03,
+		HANDSHAKE = 0x00,
+		READY = 0x01,
+		MESSAGE = 0x02,
+		NOTIFICATION = 0x03,
+	}
 }

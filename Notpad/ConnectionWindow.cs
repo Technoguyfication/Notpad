@@ -26,7 +26,7 @@ namespace Notpad.Client
 			directConnect = new DirectConnect(this);
 		}
 
-		private void WindowLoaded (object sender, EventArgs e)
+		private void WindowLoaded(object sender, EventArgs e)
 		{
 			serverListView.Items.Clear();
 
@@ -58,16 +58,21 @@ namespace Notpad.Client
 			{
 				Thread thread = new Thread(() =>
 				{
-					Server server = GetServerFromItem(item);
 					NetClient client = new NetClient(null);
+					Server server = GetServerFromItem(item);
 					client.ServerQueryReceived += (object sender, ServerQueryReceivedEventArgs e) =>
 					{
 						updateServer(e.Server);
+						e.Client.Dispose();
 					};
 					client.ConnectionDisconnected += (object sender, ConnectionDisconnectedEventArgs e) =>
 					{
 						server.Status = ServerStatus.OFFLINE;
 						updateServer(server);
+					};
+					client.ConnectionEstablished += (object sender, EventArgs e) =>
+					{
+						client.Write(client.GetQueryPacket());
 					};
 
 					server.Status = ServerStatus.UNAVAILABLE;
