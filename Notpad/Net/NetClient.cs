@@ -54,9 +54,11 @@ namespace Notpad.Client.Net
 			if ((int)CurrentState % 5 != 0)
 				Disconnect(false, "Client being disposed.");
 
-			ListenThread.Abort();
+			if (ListenThread != null)
+				ListenThread.Abort();
 
-			Client.Close();
+			if (Client != null)
+				Client.Close();
 			Client = null;
 		}
 
@@ -132,7 +134,11 @@ namespace Notpad.Client.Net
 
 		public static Packet GetDisconnectPacket(string reason)
 		{
-			return new Packet((byte)CSPackets.DISCONNECT);
+			List<byte> builder = new List<byte>();
+			byte[] reasonRaw = Encoding.Unicode.GetBytes(reason);
+			builder.AddRange(BitConverter.GetBytes(reasonRaw.Length).CheckEndianness());
+			builder.AddRange(reasonRaw);
+			return new Packet((byte)CSPackets.DISCONNECT, builder.ToArray());
 		}
 
 		public static Packet GetQueryPacket()

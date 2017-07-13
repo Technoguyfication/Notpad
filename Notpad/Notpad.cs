@@ -49,11 +49,6 @@ namespace Notpad.Client
 					else
 						Client.Username = username;
 
-					if (Client.CurrentState != ClientConnectionState.DISCONNECTED)
-					{
-						this.InvokeIfRequired(() => { Client.Disconnect(reason: null); });
-					}
-
 					Client.Connect(server);
 				}
 				catch (Exception e)
@@ -93,15 +88,16 @@ namespace Notpad.Client
 
 		private void ClientReady(object sender, EventArgs e)
 		{
-			PrintString("Connected!");
+			NetClient client = (NetClient)sender;
+			PrintString($"Connected to {client.CurrentServer.ToString()} as {client.Username}");
 		}
 
 		private void ClientConnectionDisconnect(object sender, ConnectionDisconnectedEventArgs e)
 		{
 			if (e.Reason != null)
-				PrintString($"Disconnected from server: {e.Reason}");
+				PrintString($"Disconnected: {e.Reason}");
 			else
-				PrintString("Disconnected from server.");
+				PrintString("Disconnected.");
 		}
 
 		#endregion
@@ -319,7 +315,7 @@ namespace Notpad.Client
 		private void DisconnectMenuItemClick(object sender, EventArgs e)
 		{
 			if (Client != null && Client.CurrentState != ClientConnectionState.DISCONNECTED)
-				Client.Disconnect(reason: null);
+				Client.Disconnect(true);
 		}
 
 		private void FileMenuItemPopup(object sender, EventArgs e)

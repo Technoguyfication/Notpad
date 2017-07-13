@@ -136,13 +136,7 @@ namespace Notpad.Server.Net
 			string clientName = e.Client.Username;
 			RemoveClient(e.Client);
 			e.Client.Dispose();
-			announceDisconnect($"\"{clientName}\" disconnected: {e.Reason ?? "Unknown"}");
-
-			void announceDisconnect(string reason)
-			{
-				Console.WriteLine(reason);
-				SendMessage(true, reason);
-			}
+			SendMessage(true, $"\"{clientName}\" disconnected: {e.Reason ?? "Unknown"}");
 		}
 
 		private void HandlePacket(Packet packet, RemoteClient client)
@@ -205,13 +199,13 @@ namespace Notpad.Server.Net
 
 					client.Username = username;
 					client.Write(RemoteClient.GetReadyPacket());
-					Console.WriteLine($"Client {client.ToString()} identified as \"{client.Username}\"");
 					client.ChangeClientState(ClientConnectionState.READY);
+					Console.WriteLine($"Client {client.ToString()} identified as \"{client.Username}\"");
 					break;
 				case (byte)CSPackets.DISCONNECT:
 					int reasonLength = payload.GetNextInt();
 					string reason = Encoding.Unicode.GetString(payload.GetBytes(reasonLength));
-					client.Disconnect(false, "Client disconnected from server.");
+					client.Disconnect(false, reason);
 					break;
 			}
 		}

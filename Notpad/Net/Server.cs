@@ -25,7 +25,7 @@ namespace Notpad.Client.Net
 		public string Name { get; set; }
 		public override string ToString()
 		{
-			return $"{Address}:{Port}";
+			return Name ?? $"{Address}:{Port}";
 		}
 
 		public int Online { get; set; }
