@@ -32,6 +32,39 @@ namespace Notpad.Server
 
 			ListenThread.Start();
 			Console.WriteLine($"Now listening on {Program.Settings.EndPoint.ToString()}");
+			while (true)
+			{
+				ParseCommand(Console.ReadLine());
+			}
+		}
+
+		private void ParseCommand(string command)
+		{
+			if (string.IsNullOrEmpty(command))
+				return;
+
+			string[] split = command.Split(' ');
+			string cmd = split[0];
+			string args = string.Join(" ", split.Skip(1).ToArray());
+			new Thread(() =>
+			{
+				switch (cmd)
+				{
+					case "send":
+						Clients.BroadcastToClients(ClientCollection.GetMessagePacket(true, args));
+						break;
+					case "send!":
+
+						break;
+					default:
+						Console.WriteLine($"Command not found: {cmd}");
+						break;
+				}
+			})
+			{
+				IsBackground = true,
+				Name = "Command executer",
+			}.Start();
 		}
 
 		private void ClientListenLoop()
