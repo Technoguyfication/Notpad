@@ -51,7 +51,7 @@ namespace Notpad.Server
 				switch (cmd)
 				{
 					case "send":
-						Clients.BroadcastToClients(ClientCollection.GetMessagePacket(true, args));
+						Clients.BroadcastToClients(NetClient.GetMessagePacket(true, args));
 						break;
 					case "send!":
 

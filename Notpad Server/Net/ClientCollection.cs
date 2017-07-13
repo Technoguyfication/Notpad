@@ -117,7 +117,7 @@ namespace Notpad.Server.Net
 
 					Console.WriteLine($"Query from {client}");
 
-					client.Write(GetQueryPacket(
+					client.Write(NetClient.GetQueryPacket(
 						Program.Settings.Name,
 						UsersOnline,
 						Program.Settings.MaxUsers));
@@ -131,7 +131,7 @@ namespace Notpad.Server.Net
 					string message = Encoding.Unicode.GetString(payload.GetBytes(messageLength));
 
 					Console.WriteLine($"MESSAGE: ({client.Username}): {message}");
-					BroadcastToClients(GetMessagePacket(false, message, client.Username));
+					BroadcastToClients(NetClient.GetMessagePacket(false, message, client.Username));
 					break;
 				case (byte)CSPackets.IDENTIFY:
 					if (client.CurrentState != ClientConnectionState.CONNECTED)
@@ -150,13 +150,13 @@ namespace Notpad.Server.Net
 
 						if (usernames.Contains(username))
 						{
-							client.Write(GetReadyPacket(false, "Username already being used"));
+							client.Write(NetClient.GetReadyPacket(false, "Username already being used"));
 							break;
 						}
 					}
 
 					client.Username = username;
-					client.Write(GetReadyPacket(true));
+					client.Write(NetClient.GetReadyPacket(true));
 					Console.WriteLine($"Client {client.ToString()} identified as \"{client.Username}\"");
 					client.ChangeClientState(ClientConnectionState.READY);
 					break;
@@ -165,48 +165,5 @@ namespace Notpad.Server.Net
 					break;
 			}
 		}
-
-		#region Packet Factory
-
-		public static Packet GetDisconnectPacket()
-		{
-			return new Packet((byte)SCPackets.DISCONNECT);
-		}
-
-		public static Packet GetQueryPacket(string name, int online, int maxOnline)
-		{
-			List<byte> builder = new List<byte>();
-			byte[] serverName = Encoding.Unicode.GetBytes(name);
-			builder.AddRange(BitConverter.GetBytes(serverName.Length).CheckEndianness());
-			builder.AddRange(serverName);
-			builder.AddRange(BitConverter.GetBytes(online).CheckEndianness());
-			builder.AddRange(BitConverter.GetBytes(maxOnline));
-			return new Packet((byte)CSPackets.QUERY, builder.ToArray());
-		}
-
-		public static Packet GetMessagePacket(bool server, string content, string author = "")
-		{
-			List<byte> builder = new List<byte>();
-			builder.AddRange(BitConverter.GetBytes(server));
-			byte[] authorRaw = Encoding.Unicode.GetBytes(author);
-			builder.AddRange(BitConverter.GetBytes(authorRaw.Length).CheckEndianness());
-			builder.AddRange(authorRaw);
-			byte[] contentRaw = Encoding.Unicode.GetBytes(content);
-			builder.AddRange(BitConverter.GetBytes(contentRaw.Length).CheckEndianness());
-			builder.AddRange(contentRaw);
-			return new Packet((byte)SCPackets.MESSAGE, builder.ToArray());
-		}
-
-		public static Packet GetReadyPacket(bool success, string message = "")
-		{
-			List<byte> builder = new List<byte>();
-			builder.AddRange(BitConverter.GetBytes(success));
-			byte[] messageRaw = Encoding.Unicode.GetBytes(message);
-			builder.AddRange(BitConverter.GetBytes(messageRaw.Length).CheckEndianness());
-			builder.AddRange(messageRaw);
-			return new Packet((int)SCPackets.READY, builder.ToArray());
-		}
-
-		#endregion
 	}
 }
