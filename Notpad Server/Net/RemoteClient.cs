@@ -11,7 +11,7 @@ using Notpad.Server;
 
 namespace Notpad.Server.Net
 {
-	public class NetClient : IStreamable, IDisposable
+	public class RemoteClient : IStreamable, IDisposable
 	{
 		public delegate void ClientPacketReceivedEventHandler(object sender, ClientPacketReceivedEventArgs e);
 		public event ClientPacketReceivedEventHandler PacketReceived;
@@ -47,7 +47,7 @@ namespace Notpad.Server.Net
 			}
 		}
 
-		public NetClient(TcpClient client)
+		public RemoteClient(TcpClient client)
 		{
 			Client = client;
 			Endpoint = (IPEndPoint)Client.Client.RemoteEndPoint;
@@ -55,7 +55,7 @@ namespace Notpad.Server.Net
 			ChangeClientState((client.Connected) ? ClientConnectionState.CONNECTED : ClientConnectionState.DISCONNECTED);
 		}
 
-		~NetClient()
+		~RemoteClient()
 		{
 			Dispose();
 		}
@@ -116,7 +116,10 @@ namespace Notpad.Server.Net
 
 		public void Write(byte[] buffer)
 		{
-			Write(buffer, 0, buffer.Length);
+			lock (StreamWriteLock)
+			{
+				Write(buffer, 0, buffer.Length);
+			}
 		}
 
 		public void Write(byte[] buffer, int offset, int size)
@@ -219,13 +222,13 @@ namespace Notpad.Server.Net
 
 	public class ClientPacketReceivedEventArgs : EventArgs
 	{
-		public NetClient Client { get; set; }
+		public RemoteClient Client { get; set; }
 		public Packet Packet { get; set; }
 	}
 
 	public class ClientDisconnectedEventArgs : EventArgs
 	{
-		public NetClient Client { get; set; }
+		public RemoteClient Client { get; set; }
 		public string Reason { get; set; }
 	}
 

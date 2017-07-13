@@ -51,7 +51,7 @@ namespace Notpad.Server
 				switch (cmd)
 				{
 					case "send":
-						Clients.BroadcastToClients(NetClient.GetMessagePacket(true, args));
+						Clients.BroadcastToClients(RemoteClient.GetMessagePacket(true, args));
 						break;
 					case "send!":
 
@@ -72,7 +72,7 @@ namespace Notpad.Server
 			Listener.Start();
 			while (true)
 			{
-				NetClient client = new NetClient(Listener.AcceptTcpClient());
+				RemoteClient client = new RemoteClient(Listener.AcceptTcpClient());
 				Clients.AddClient(client);
 			}
 		}

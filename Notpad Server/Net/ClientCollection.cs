@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Notpad.Server.Net
 {
-	public class ClientCollection : List<NetClient>
+	public class ClientCollection : List<RemoteClient>
 	{
 		public int UsersOnline
 		{
@@ -26,14 +26,14 @@ namespace Notpad.Server.Net
 		{
 			lock (this)
 			{
-				foreach (NetClient client in this)
+				foreach (RemoteClient client in this)
 				{
 					client.Write(buffer);
 				}
 			}
 		}
 
-		public void AddClient(NetClient client)
+		public void AddClient(RemoteClient client)
 		{
 			if (Exists(client))
 				throw new Exception("Client already added!");
@@ -57,7 +57,7 @@ namespace Notpad.Server.Net
 			client.ListenThread.Start();
 		}
 
-		public bool Exists(NetClient client)
+		public bool Exists(RemoteClient client)
 		{
 			lock (this)
 			{
@@ -65,7 +65,7 @@ namespace Notpad.Server.Net
 			}
 		}
 
-		public int GetClientIndex(NetClient client)
+		public int GetClientIndex(RemoteClient client)
 		{
 			return FindIndex((c) =>
 			{
@@ -73,7 +73,7 @@ namespace Notpad.Server.Net
 			});
 		}
 
-		public void RemoveClient(NetClient client)
+		public void RemoveClient(RemoteClient client)
 		{
 			if (!Exists(client))
 				return;
@@ -105,7 +105,7 @@ namespace Notpad.Server.Net
 			Console.WriteLine($"Client {clientName} disconnected.");
 		}
 
-		private void HandlePacket(Packet packet, NetClient client)
+		private void HandlePacket(Packet packet, RemoteClient client)
 		{
 			List<byte> payload = new List<byte>(packet.Payload);
 
@@ -117,7 +117,7 @@ namespace Notpad.Server.Net
 
 					Console.WriteLine($"Query from {client}");
 
-					client.Write(NetClient.GetQueryPacket(
+					client.Write(RemoteClient.GetQueryPacket(
 						Program.Settings.Name,
 						UsersOnline,
 						Program.Settings.MaxUsers));
@@ -131,7 +131,7 @@ namespace Notpad.Server.Net
 					string message = Encoding.Unicode.GetString(payload.GetBytes(messageLength));
 
 					Console.WriteLine($"MESSAGE: ({client.Username}): {message}");
-					BroadcastToClients(NetClient.GetMessagePacket(false, message, client.Username));
+					BroadcastToClients(RemoteClient.GetMessagePacket(false, message, client.Username));
 					break;
 				case (byte)CSPackets.IDENTIFY:
 					if (client.CurrentState != ClientConnectionState.CONNECTED)
@@ -150,13 +150,13 @@ namespace Notpad.Server.Net
 
 						if (usernames.Contains(username))
 						{
-							client.Write(NetClient.GetReadyPacket(false, "Username already being used"));
+							client.Write(RemoteClient.GetReadyPacket(false, "Username already being used"));
 							break;
 						}
 					}
 
 					client.Username = username;
-					client.Write(NetClient.GetReadyPacket(true));
+					client.Write(RemoteClient.GetReadyPacket(true));
 					Console.WriteLine($"Client {client.ToString()} identified as \"{client.Username}\"");
 					client.ChangeClientState(ClientConnectionState.READY);
 					break;
