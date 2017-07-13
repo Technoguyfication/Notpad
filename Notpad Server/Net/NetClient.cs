@@ -9,7 +9,7 @@ using System.Net;
 using System.Threading;
 using Notpad.Server;
 
-namespace Notpad.Server
+namespace Notpad.Server.Net
 {
 	public class NetClient : IStreamable, IDisposable
 	{
@@ -20,6 +20,8 @@ namespace Notpad.Server
 
 		public readonly object StreamReadLock = new object();
 		public readonly object StreamWriteLock = new object();
+
+		public string Username { get; set; }
 
 		public ClientConnectionState CurrentState = ClientConnectionState.DISCONNECTED;
 
@@ -49,13 +51,18 @@ namespace Notpad.Server
 		{
 			Client = client;
 			Endpoint = (IPEndPoint)Client.Client.RemoteEndPoint;
-			CurrentState = (client.Connected) ? ClientConnectionState.CONNECTED : ClientConnectionState.DISCONNECTED;
-			Console.WriteLine($"Initialized client {Endpoint.ToString()}. ({CurrentState.ToString()})");
+			Console.WriteLine($"Connecting client {Endpoint.ToString()}");
+			ChangeClientState((client.Connected) ? ClientConnectionState.CONNECTED : ClientConnectionState.DISCONNECTED);
 		}
 
 		~NetClient()
 		{
 			Dispose();
+		}
+
+		public override string ToString()
+		{
+			return Endpoint.ToString();
 		}
 
 		public void Dispose()
@@ -71,25 +78,35 @@ namespace Notpad.Server
 		{
 			try
 			{
-				if (Client.Connected)
-				{
-					Client.Client.Disconnect(true);
-				}
+				Write(ClientCollection.GetDisconnectPacket());
 			}
-			catch (Exception e)
+			catch (Exception) { }
+
+			try
 			{
-				Console.WriteLine($"Failed to disconnect client {UniqueID} ({Endpoint.ToString()}): {e.Message}");
+				if (Client.Connected)
+					Client.Close();
 			}
+			catch (Exception) { }
+
+			if (ListenThread != null)
+				ListenThread.Abort();
 
 			if ((int)CurrentState % 5 != 0)
 			{
-				CurrentState = ClientConnectionState.DISCONNECTED;
+				ChangeClientState(ClientConnectionState.DISCONNECTED);
 				Disconnected?.Invoke(this, new ClientDisconnectedEventArgs()
 				{
 					Reason = reason,
 					Client = this,
 				});
 			}
+		}
+
+		public void ChangeClientState(ClientConnectionState state)
+		{
+			CurrentState = state;
+			Console.WriteLine($"Client {ToString()} state changed to ({state.ToString()})");
 		}
 
 		public void Write(Packet packet)
@@ -124,11 +141,6 @@ namespace Notpad.Server
 			}
 		}
 
-		public override string ToString()
-		{
-			return Endpoint.ToString();
-		}
-
 		public void ListenLoop()
 		{
 			while ((int)CurrentState % 8 == 0)
@@ -145,11 +157,18 @@ namespace Notpad.Server
 						Disconnect(e.Message);
 						return;
 					}
-					PacketReceived?.Invoke(this, new ClientPacketReceivedEventArgs()
+					new Thread(() =>
 					{
-						Client = this,
-						Packet = packet,
-					});
+						PacketReceived?.Invoke(this, new ClientPacketReceivedEventArgs()
+						{
+							Client = this,
+							Packet = packet,
+						});
+					})
+					{
+						IsBackground = true,
+						Name = "Packet Handler",
+					}.Start();
 				}
 			}
 		}
@@ -184,5 +203,17 @@ namespace Notpad.Server
 		HANDSHAKE = 0x00,
 		IDENTIFY = 0x01,
 		MESSAGE = 0x02,
+		DISCONNECT = 0xF0,
+	}
+
+	public enum SCPackets : byte
+	{
+		QUERY = 0xFF,
+
+		HANDSHAKE = 0x00,
+		READY = 0x01,
+		MESSAGE = 0x02,
+		NOTIFICATION = 0x03,
+		DISCONNECT = 0xF0,
 	}
 }

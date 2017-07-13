@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Notpad.Server
+namespace Notpad.Server.Net
 {
 	public class Packet
 	{

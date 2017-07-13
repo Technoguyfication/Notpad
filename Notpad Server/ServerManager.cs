@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Notpad.Server.Net;
 
 namespace Notpad.Server
 {
@@ -17,7 +18,7 @@ namespace Notpad.Server
 
 		public ServerManager()
 		{
-
+			// was i supposed to put stuff here???
 		}
 
 		public void Start()
@@ -39,7 +40,6 @@ namespace Notpad.Server
 			while (true)
 			{
 				NetClient client = new NetClient(Listener.AcceptTcpClient());
-				Console.WriteLine($"Client connect request from {client.Endpoint}");
 				Clients.AddClient(client);
 			}
 		}

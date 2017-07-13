@@ -7,6 +7,7 @@ using System.IO;
 using Newtonsoft.Json;
 using System.Net.Sockets;
 using System.Threading;
+using Notpad.Server.Net;
 
 namespace Notpad.Server
 {

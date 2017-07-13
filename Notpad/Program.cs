@@ -85,5 +85,10 @@ namespace Notpad.Client
 			List<ListViewItem> _items = new List<ListViewItem>(__items);
 			return _items.Find(match);
 		}
+
+		public static void AddFirst<T>(this List<T> list, T item)
+		{
+			list.Insert(0, item);
+		}
 	}
 }

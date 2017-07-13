@@ -27,7 +27,7 @@ namespace Notpad.Client.Net
 
 		public Server CurrentServer { get; private set; }
 
-		public string Username { get; private set; }
+		public string Username { get; set; }
 		public ClientConnectionState CurrentState { get; private set; } = ClientConnectionState.DISCONNECTED;
 
 		public delegate void MessageEventHandler(object sender, MessageEventArgs e);
@@ -36,14 +36,14 @@ namespace Notpad.Client.Net
 
 		public event MessageEventHandler Message;
 		public event ServerQueryReceivedEventHandler ServerQueryReceived;
-		public event EventHandler ConnectionEstablished;
+		public event EventHandler ClientReady;
+		public event EventHandler Connected;
 		public event ConnectionDisconnectedEventHandler ConnectionDisconnected;
 
 		private Thread ListenThread;
 
 		public NetClient(string username)
 		{
-			Client = new TcpClient();
 			Username = username;
 			CurrentState = ClientConnectionState.DISCONNECTED;
 		}
@@ -73,6 +73,8 @@ namespace Notpad.Client.Net
 			if ((int)CurrentState % 5 != 0)
 				Disconnect("Connecting to new server");
 
+			Client = new TcpClient();
+
 			CurrentServer = server;
 
 			CurrentState = ClientConnectionState.UNVERIFIED;
@@ -96,19 +98,22 @@ namespace Notpad.Client.Net
 			};
 
 			ListenThread.Start();
-		}
 
-		public void Disconnect()
-		{
-			Disconnect(null);
+			Connected?.Invoke(this, EventArgs.Empty);
 		}
 
 		public void Disconnect(string reason)
 		{
 			try
 			{
-				if (Client.Connected)
-					Client.Client.Disconnect(true);
+				Write(GetDisconnectPacket());
+			}
+			catch (Exception)
+			{ }
+
+			try
+			{
+				Client.Close();
 
 				if (ListenThread != null && ((int)ListenThread.ThreadState % 16) == 0)
 					ListenThread.Abort();
@@ -130,17 +135,22 @@ namespace Notpad.Client.Net
 
 		#region Packet Factory
 
-		public Packet GetQueryPacket()
+		public static Packet GetDisconnectPacket()
+		{
+			return new Packet((byte)CSPackets.DISCONNECT);
+		}
+
+		public static Packet GetQueryPacket()
 		{
 			return new Packet((byte)CSPackets.QUERY);
 		}
 
-		public Packet GetHandshakePacket()
+		public static Packet GetHandshakePacket()
 		{
 			return new Packet((byte)CSPackets.HANDSHAKE);
 		}
 
-		public Packet GetIdentifyPacket(string username)
+		public static Packet GetIdentifyPacket(string username)
 		{
 			byte[] usernameBytes = Encoding.Unicode.GetBytes(username);
 			List<byte> builder = new List<byte>();
@@ -149,7 +159,7 @@ namespace Notpad.Client.Net
 			return new Packet((byte)CSPackets.IDENTIFY, builder.ToArray());
 		}
 
-		public Packet GetMessagePacket(string message)
+		public static Packet GetMessagePacket(string message)
 		{
 			byte[] messageBytes = Encoding.Unicode.GetBytes(message);
 			List<byte> builder = new List<byte>();
@@ -220,7 +230,7 @@ namespace Notpad.Client.Net
 						break;
 					}
 					CurrentState = ClientConnectionState.READY;
-					ConnectionEstablished?.Invoke(this, EventArgs.Empty);
+					ClientReady?.Invoke(this, EventArgs.Empty);
 					break;
 				case (byte)SCPackets.NOTIFICATION:
 					if (CurrentState != ClientConnectionState.READY)
@@ -244,6 +254,9 @@ namespace Notpad.Client.Net
 						Client = this,
 					});
 					break;
+				case (byte)SCPackets.DISCONNECT:
+					Disconnect("Server closed connection.");
+					break;
 				default:
 					break;
 			}
@@ -263,7 +276,14 @@ namespace Notpad.Client.Net
 					try
 					{
 						Packet packet = this.GetNextPacket();
-						HandlePacket(packet);
+						new Thread(() =>
+						{
+							HandlePacket(packet);
+						})
+						{
+							IsBackground = true,
+							Name = "Packet Handler Thread"
+						}.Start();
 					}
 					catch (Exception e)
 					{
@@ -372,6 +392,7 @@ namespace Notpad.Client.Net
 		HANDSHAKE = 0x00,
 		IDENTIFY = 0x01,
 		MESSAGE = 0x02,
+		DISCONNECT = 0xF0,
 	}
 
 	public enum SCPackets : byte
@@ -382,5 +403,6 @@ namespace Notpad.Client.Net
 		READY = 0x01,
 		MESSAGE = 0x02,
 		NOTIFICATION = 0x03,
+		DISCONNECT = 0xF0,
 	}
 }

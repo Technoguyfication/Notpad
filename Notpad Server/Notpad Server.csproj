@@ -50,9 +50,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IStreamable.cs" />
-    <Compile Include="NetClient.cs" />
-    <Compile Include="ClientCollection.cs" />
-    <Compile Include="Packet.cs" />
+    <Compile Include="Net\NetClient.cs" />
+    <Compile Include="Net\ClientCollection.cs" />
+    <Compile Include="Net\Packet.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServerManager.cs" />

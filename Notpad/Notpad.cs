@@ -20,6 +20,9 @@ namespace Notpad.Client
 		public NetClient Client;
 		public ConnectionWindow connectionWindow;
 
+		private List<string> MessageHistory = new List<string>();
+		private int HistoryIndex = -1;
+
 		public Notpad()
 		{
 			InitializeComponent();
@@ -39,13 +42,16 @@ namespace Notpad.Client
 					{
 						Client = new NetClient(username);
 						Client.Message += ClientMessage;
-						Client.ConnectionEstablished += ChatConnectionEstablished;
+						Client.ClientReady += ClientReady;
+						Client.Connected += ClientConnected;
 						Client.ConnectionDisconnected += ClientConnectionDisconnect;
 					}
+					else
+						Client.Username = username;
 
 					if (Client.CurrentState != ClientConnectionState.DISCONNECTED)
 					{
-						this.InvokeIfRequired(Client.Disconnect);
+						this.InvokeIfRequired(() => { Client.Disconnect(null); });
 					}
 
 					Client.Connect(server);
@@ -59,6 +65,11 @@ namespace Notpad.Client
 				Name = "Server Connect",
 				IsBackground = true,
 			}.Start(); ;
+		}
+
+		private void ClientConnected(object sender, EventArgs e)
+		{
+			Client.Write(NetClient.GetIdentifyPacket(Client.Username));
 		}
 
 		private void ClientMessage(object sender, MessageEventArgs e)
@@ -80,7 +91,7 @@ namespace Notpad.Client
 			}
 		}
 
-		private void ChatConnectionEstablished(object sender, EventArgs e)
+		private void ClientReady(object sender, EventArgs e)
 		{
 			PrintString("Connected!");
 		}
@@ -197,7 +208,7 @@ namespace Notpad.Client
 
 		private void WindowClosing(object sender, FormClosingEventArgs e)
 		{
-			if (e.CloseReason == CloseReason.UserClosing)
+			if ((e.CloseReason == CloseReason.UserClosing) && Client != null && (int)Client.CurrentState % 8 == 0)
 			{
 				ConfirmClose unsavedChanges = new ConfirmClose();
 				DialogResult result = unsavedChanges.ShowDialog(this);
@@ -227,8 +238,35 @@ namespace Notpad.Client
 			}
 			else if (e.KeyCode == Keys.Enter && e.Modifiers != (Keys.Shift | Keys.Control))
 			{
-				PrintString(inputTextBox.Text.Trim());
-				inputTextBox.Text = "";
+				MessageHistory.AddFirst(inputTextBox.Text);
+				HistoryIndex = -1;
+
+				if (Client == null || Client.CurrentState != ClientConnectionState.READY)
+					PrintString("Can't send: Client not connected.");
+				else
+					Client.Write(NetClient.GetMessagePacket(inputTextBox.Text));
+
+				e.SuppressKeyPress = true;
+				inputTextBox.Text = string.Empty;
+			}
+			else if (e.KeyCode == Keys.Up && e.Alt && MessageHistory.Count > 0)
+			{
+				if (HistoryIndex < MessageHistory.Count - 1)
+					HistoryIndex++;
+
+				inputTextBox.Text = MessageHistory[HistoryIndex];
+			}
+			else if (e.KeyCode == Keys.Down && e.Alt && MessageHistory.Count > 0)
+			{
+				if (HistoryIndex > 0)
+					HistoryIndex--;
+				else
+				{
+					inputTextBox.Text = string.Empty;
+					return;
+				}
+
+				inputTextBox.Text = MessageHistory[HistoryIndex];
 			}
 		}
 
@@ -281,7 +319,7 @@ namespace Notpad.Client
 		private void DisconnectMenuItemClick(object sender, EventArgs e)
 		{
 			if (Client != null && Client.CurrentState != ClientConnectionState.DISCONNECTED)
-				Client.Disconnect();
+				Client.Disconnect(null);
 		}
 
 		private void FileMenuItemPopup(object sender, EventArgs e)
@@ -332,7 +370,7 @@ namespace Notpad.Client
 
 		private void ReconnectMenuItemClick(object sender, EventArgs e)
 		{
-			Client.Connect(Client.CurrentServer);
+			ConnectToServer(Client.CurrentServer, Client.Username);
 		}
 	}
 }

@@ -70,9 +70,9 @@ namespace Notpad.Client
 						server.Status = ServerStatus.OFFLINE;
 						updateServer(server);
 					};
-					client.ConnectionEstablished += (object sender, EventArgs e) =>
+					client.Connected += (object sender, EventArgs e) =>
 					{
-						client.Write(client.GetQueryPacket());
+						client.Write(NetClient.GetQueryPacket());
 					};
 
 					server.Status = ServerStatus.UNAVAILABLE;
@@ -172,13 +172,13 @@ namespace Notpad.Client
 			Connect(server);
 		}
 
-		public bool Connect(Server server)
+		public void Connect(Server server)
 		{
 			string username = usernameTextbox.Text.Trim();
 			if (string.IsNullOrEmpty(username))
 			{
 				MessageBox.Show("Please enter a username.", "Error", MessageBoxButtons.OK);
-				return false;
+				return;
 			}
 
 			MainForm.InvokeIfRequired(() =>
@@ -187,7 +187,7 @@ namespace Notpad.Client
 			});
 
 			DialogResult = DialogResult.OK;
-			return true;
+			return;
 		}
 
 		private Server GetSelectedServer()
@@ -235,8 +235,7 @@ namespace Notpad.Client
 
 		private void DirectConnectButtonClick(object sender, EventArgs e)
 		{
-			if (directConnect.ShowDialog() == DialogResult.OK)
-				DialogResult = DialogResult.OK;
+			directConnect.ShowDialog();
 		}
 	}
 }
