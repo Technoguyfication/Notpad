@@ -23,6 +23,14 @@ namespace Notpad.Client
 		private List<string> MessageHistory = new List<string>();
 		private int HistoryIndex = -1;
 
+		private bool Ready
+		{
+			get
+			{
+				return (Client != null && Client.CurrentState == ClientConnectionState.READY);
+			}
+		}
+
 		public Notpad()
 		{
 			InitializeComponent();
@@ -215,14 +223,11 @@ namespace Notpad.Client
 
 		private void MainTextBoxKeyDown(object sender, KeyEventArgs e)
 		{
-			e.SuppressKeyPress = true;  // suppress by default so we can't type into it
 			if (e.KeyCode == Keys.A && e.Modifiers == Keys.Control) // ctrl+a
 			{
 				mainTextBox.SelectAll();
 				e.SuppressKeyPress = true;
 			}
-			else if ((e.KeyData & Keys.Modifiers) != Keys.None) // allow modifier keys through
-				e.SuppressKeyPress = false;
 		}
 
 		private void InputTextBoxKeyDown(object sender, KeyEventArgs e)
@@ -237,13 +242,13 @@ namespace Notpad.Client
 				MessageHistory.AddFirst(inputTextBox.Text);
 				HistoryIndex = -1;
 
-				if (Client == null || Client.CurrentState != ClientConnectionState.READY)
-					PrintString("Can't send: Client not connected.");
-				else
-					Client.Write(NetClient.GetMessagePacket(inputTextBox.Text));
+				if (Ready)
+				{
+					SendMessage(inputTextBox.Text);
+					inputTextBox.Text = string.Empty;
+				}
 
 				e.SuppressKeyPress = true;
-				inputTextBox.Text = string.Empty;
 			}
 			else if (e.KeyCode == Keys.Up && e.Alt && MessageHistory.Count > 0)
 			{
@@ -266,6 +271,14 @@ namespace Notpad.Client
 			}
 		}
 
+		private void SendMessage(string message)
+		{
+			if (!Ready)
+				PrintString("Can't send: Client not connected.");
+			else
+				Client.Write(NetClient.GetMessagePacket(message));
+		}
+
 		private void AboutMenuItemClick(object sender, EventArgs e)
 		{
 			new AboutBox().ShowDialog();
@@ -282,14 +295,7 @@ namespace Notpad.Client
 				return;
 			}
 
-			List<string> updatedLines = mainTextBox.Lines.ToList();
-
-			if (updatedLines.Count >= MaxLines)
-				updatedLines = (List<string>)updatedLines.Take(MaxLines - 1);
-
-			updatedLines.Add(text);
-
-			mainTextBox.Lines = updatedLines.ToArray();
+			mainTextBox.AppendText(text + ((newline) ? Environment.NewLine : string.Empty));
 		}
 
 		private void ExitMenuItemClick(object sender, EventArgs e)
@@ -373,6 +379,13 @@ namespace Notpad.Client
 		{
 			if (Client != null)
 				Client.Dispose();
+		}
+
+		private void MainTextBoxKeyPress(object sender, KeyPressEventArgs e)
+		{
+			inputTextBox.Focus();
+			SendKeys.Send(e.KeyChar.ToString());
+			e.Handled = true;
 		}
 	}
 }

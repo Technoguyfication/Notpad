@@ -208,8 +208,8 @@
 			this.mainTextBox.ScrollBars = System.Windows.Forms.ScrollBars.Both;
 			this.mainTextBox.Size = new System.Drawing.Size(636, 231);
 			this.mainTextBox.TabIndex = 0;
-			this.mainTextBox.TabStop = false;
 			this.mainTextBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainTextBoxKeyDown);
+			this.mainTextBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.MainTextBoxKeyPress);
 			// 
 			// inputTextBox
 			// 
@@ -224,7 +224,6 @@
 			this.inputTextBox.Name = "inputTextBox";
 			this.inputTextBox.Size = new System.Drawing.Size(636, 65);
 			this.inputTextBox.TabIndex = 1;
-			this.inputTextBox.Text = "Type your message here\r\n\r\nThis is a multiline text box";
 			this.inputTextBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.InputTextBoxKeyDown);
 			// 
 			// contextMenuStrip1
