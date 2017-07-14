@@ -120,7 +120,7 @@ namespace Notpad.Client.Net
 				if (Client.Client.Connected)
 					Client.Close();
 			}
-			catch (Exception e)
+			catch (Exception)
 			{ }
 
 			ConnectionDisconnected?.Invoke(this, new ConnectionDisconnectedEventArgs()
@@ -270,7 +270,7 @@ namespace Notpad.Client.Net
 							Name = "Packet Handler Thread"
 						}.Start();
 					}
-					catch (Exception e)
+					catch (Exception)
 					{
 						Disconnect(false, "Connection closed by remote host.");
 						break;
