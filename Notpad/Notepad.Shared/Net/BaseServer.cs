@@ -65,7 +65,7 @@ namespace Technoguyfication.Notpad.Shared
 
         private async Task ClientListener()
         {
-
+            // todo: this
         }
 
         private async Task NewClientListener()
