@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Net;
-using Technoguyfication.Notpad.Server.Net;
 using Technoguyfication.Notpad.Shared;
 
-namespace Technoguyfication.Notpad.Server
+namespace Technoguyfication.Notpad.Dedicated
 {
-	static class Program
+    static class Program
 	{
 		static DedicatedServer _server;
 
@@ -13,7 +12,12 @@ namespace Technoguyfication.Notpad.Server
 		{
 			_server = new DedicatedServer();
 
-			_server.DiscoveryEvent += _server_DiscoveryEvent;
+			_server.OnDiscoveryRequest += _server_DiscoveryEvent;
+
+			_server.OnQuery += (sender, args) =>
+			{
+				Console.WriteLine("Server query received");
+			};
 
 			_server.Start(42069, IPAddress.Any);
 

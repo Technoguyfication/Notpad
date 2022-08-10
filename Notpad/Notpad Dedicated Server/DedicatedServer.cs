@@ -5,10 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 using Technoguyfication.Notpad.Shared;
 
-namespace Technoguyfication.Notpad.Server.Net
+namespace Technoguyfication.Notpad.Dedicated
 {
-	class DedicatedServer : BaseServer
-	{
+    class DedicatedServer : BaseServer
+    {
 
-	}
+    }
 }

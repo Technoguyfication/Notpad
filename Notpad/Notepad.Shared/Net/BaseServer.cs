@@ -1,61 +1,126 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
+using Technoguyfication.Notpad.Net;
+using Technoguyfication.Notpad.Net.Packets;
+using Technoguyfication.Notpad.Shared.Net;
 
 namespace Technoguyfication.Notpad.Shared
 {
-	public class BaseServer
-	{
-		public readonly byte[] BroadcastMessage = new byte[] { (byte)'N', (byte)'o', (byte)'t', (byte)'p', (byte)'a', (byte)'d', (byte)'D', (byte)'i', (byte)'s', (byte)'c', (byte)'o', (byte)'v', (byte)'e', (byte)'r' };
+    public class BaseServer
+    {
+        public event EventHandler<string> OnDebugMessage;
 
-		public event DiscoveryEventHandler DiscoveryEvent;
-		public delegate void DiscoveryEventHandler(object sender, DiscoveryEventArgs e);
+        public event EventHandler<DiscoveryEventArgs> OnDiscoveryRequest;
+        public event EventHandler OnQuery;
+        public event EventHandler<User> OnClientJoin;
 
-		private TcpListener _listener;
-		private UdpClient _udpClient;
+        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly List<User> _clients;
 
-		private Task _discoveryListener;
+        private TcpListener _listener;
+        private UdpClient _udpClient;
 
-		public void Start(int port, IPAddress bindAddress)
-		{
-			// start tcp listener
-			_listener = new TcpListener(bindAddress, port);
+        private Task _discoveryListenerTask;
+        private Task _clientListenerTask;
 
-			// start udp client to listen for broadcast messages
-			_udpClient = new UdpClient(new IPEndPoint(IPAddress.Any, port));
+        public BaseServer()
+        {
+            _cancellationTokenSource = new CancellationTokenSource();
+            _clients = new List<User>();
+        }
 
-			_discoveryListener = DiscoveryListener();
-		}
+        public void Start(int port, IPAddress bindAddress)
+        {
+            // start tcp listener
+            _listener = new TcpListener(bindAddress, port);
+            _listener.Start();
 
-		public void Stop()
-		{
-			_udpClient.Close();
-			_udpClient = null;
-		}
+            // start udp client to listen for broadcast messages
+            _udpClient = new UdpClient(new IPEndPoint(IPAddress.Any, port));
 
-		private async Task DiscoveryListener()
-		{
-			while (_udpClient != null)
-			{
-				var data = await _udpClient.ReceiveAsync();
-				DiscoveryEvent?.Invoke(this, new DiscoveryEventArgs() { RemoteEndPoint = data.RemoteEndPoint });
+            // create and start tasks to handle listener events
+            _discoveryListenerTask = new Task(async () => await DiscoveryListener(), _cancellationTokenSource.Token);
+            _clientListenerTask = new Task(async () => await NewClientListener(), _cancellationTokenSource.Token);
 
-				// check if the client is a Notpad client
-				if (data.Buffer.SequenceEqual(BroadcastMessage))
-				{
-					// respond with the multicast message
-					await _udpClient.SendAsync(BroadcastMessage, BroadcastMessage.Length, data.RemoteEndPoint);
-				}
-			}
-		}
+            _discoveryListenerTask.Start();
+            _clientListenerTask.Start();
+        }
 
-		public class DiscoveryEventArgs : EventArgs
-		{
-			public IPEndPoint RemoteEndPoint { get; set; }
-		}
-	}
+        public void Stop()
+        {
+            // stop listeners if they exist
+            _udpClient?.Close();
+            _listener?.Stop();
+
+            // cancel the cancellation token for this server
+            // this will also stop listener tasks
+            _cancellationTokenSource.Cancel();
+        }
+
+        private async Task ClientListener()
+        {
+
+        }
+
+        private async Task NewClientListener()
+        {
+            while (_listener?.Server?.Blocking ?? false)
+            {
+                var socket = await _listener.AcceptSocketAsync();
+                var networkClient = new NetworkClient(socket);
+
+                Packet packet = null;
+                try
+                {
+                    packet = networkClient.ReceivePacket();
+                }
+                catch (IOException ex)
+                {
+                    OnDebugMessage?.Invoke(this, $"Socket at {socket.RemoteEndPoint} failed to become a client: {ex.Message}");
+                }
+
+                // handle packet based on packet type
+                switch (packet)
+                {
+                    case SQueryPacket:
+                        OnQuery?.Invoke(this, null);
+                        break;
+                    default:
+                        continue;
+                }
+
+                //_clients.Add(client);
+
+                //OnClientJoin?.Invoke(this, client);
+            }
+        }
+
+        private async Task DiscoveryListener()
+        {
+            // todo: send server info instead of discovery handshake
+            while (_udpClient?.Client?.Blocking ?? false)
+            {
+                var data = await _udpClient.ReceiveAsync();
+                OnDiscoveryRequest?.Invoke(this, new DiscoveryEventArgs() { RemoteEndPoint = data.RemoteEndPoint });
+
+                // check if the client is a Notpad client
+                if (data.Buffer.SequenceEqual(Protocol.BroadcastMessage))
+                {
+                    // respond with the multicast message
+                    await _udpClient.SendAsync(Protocol.BroadcastMessage, Protocol.BroadcastMessage.Length, data.RemoteEndPoint);
+                }
+            }
+        }
+
+        public class DiscoveryEventArgs : EventArgs
+        {
+            public IPEndPoint RemoteEndPoint { get; set; }
+        }
+    }
 }

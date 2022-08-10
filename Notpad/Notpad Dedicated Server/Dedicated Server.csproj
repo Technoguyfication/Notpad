@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
-    <RootNamespace>Technoguyfication.Notpad.Server</RootNamespace>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>Technoguyfication.Notpad.Dedicated</RootNamespace>
     <StartupObject></StartupObject>
   </PropertyGroup>
 
