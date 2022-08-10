@@ -27,6 +27,8 @@ namespace Technoguyfication.Notpad.Shared.Net.Packets
         {
             get
             {
+                // todo use "using" here for better memory management
+                
                 return new PacketWriter()
                     .WriteString(ServerName)
                     .WriteInt32(MaxUsers)
@@ -39,6 +41,8 @@ namespace Technoguyfication.Notpad.Shared.Net.Packets
 
         public override void Deserialize(byte[] bytes)
         {
+            // todo use "using" here for better memory management
+
             new PacketReader(bytes)
                 .ReadString(out _serverName)
                 .ReadInt32(out _maxUsers)
