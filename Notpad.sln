@@ -5,9 +5,9 @@ VisualStudioVersion = 17.3.32804.467
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Notpad", "Notpad\Notpad.csproj", "{5D3BA229-2407-4D71-B5A3-16E25595C70C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Shared", "Notepad.Shared\Shared.csproj", "{DD0DE317-3293-4FC1-99CD-AF7DD364D889}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Shared", "Shared\Shared.csproj", "{DD0DE317-3293-4FC1-99CD-AF7DD364D889}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dedicated Server", "Notpad Dedicated Server\Dedicated Server.csproj", "{4EED79D1-6A9D-4DAD-AD35-0D1E00C81861}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dedicated Server", "Server\Dedicated Server.csproj", "{4EED79D1-6A9D-4DAD-AD35-0D1E00C81861}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
