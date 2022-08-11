@@ -5,15 +5,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Technoguyfication.Notpad.Shared.Net
+namespace Technoguyfication.Notpad.Shared.Net.Utility
 {
     /// <summary>
     /// Easily read packet data using Linq-style chaining
     /// </summary>
     internal class PacketReader : IDisposable
     {
-        private MemoryStream _stream;
-        private BinaryReader _reader;
+        private readonly MemoryStream _stream;
+        private readonly BinaryReader _reader;
 
         public PacketReader(byte[] buffer)
         {
@@ -35,7 +35,7 @@ namespace Technoguyfication.Notpad.Shared.Net
 
             // decode string
             value = Protocol.BytesToString(bytes);
-            
+
             return this;
         }
 
@@ -49,6 +49,23 @@ namespace Technoguyfication.Notpad.Shared.Net
         public PacketReader ReadByte(out byte value)
         {
             value = _reader.ReadByte();
+
+            return this;
+        }
+
+        public PacketReader ReadGuid(out Guid value)
+        {
+            value = new Guid(_reader.ReadBytes(16));
+
+            return this;
+        }
+
+        public PacketReader ReadUser(out User value)
+        {
+            ReadGuid(out var guid);
+            ReadString(out var username);
+
+            value = new User(guid, username);
 
             return this;
         }

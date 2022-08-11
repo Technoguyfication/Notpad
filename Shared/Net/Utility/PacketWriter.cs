@@ -5,15 +5,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Technoguyfication.Notpad.Shared.Net
+namespace Technoguyfication.Notpad.Shared.Net.Utility
 {
     /// <summary>
     /// Easily write packet data using Linq-style chaining
     /// </summary>
     internal class PacketWriter : IDisposable
     {
-        private MemoryStream _stream;
-        private BinaryWriter _writer;
+        private readonly MemoryStream _stream;
+        private readonly BinaryWriter _writer;
 
         public PacketWriter()
         {
@@ -60,6 +60,21 @@ namespace Technoguyfication.Notpad.Shared.Net
         public PacketWriter WriteByte(byte value)
         {
             _writer.Write(value);
+
+            return this;
+        }
+
+        public PacketWriter WriteGuid(Guid value)
+        {
+            _writer.Write(value.ToByteArray());
+
+            return this;
+        }
+
+        public PacketWriter WriteUser(User value)
+        {
+            WriteGuid(value.ID);
+            WriteString(value.Username);
 
             return this;
         }

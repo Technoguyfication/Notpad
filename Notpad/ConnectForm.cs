@@ -16,10 +16,5 @@ namespace Technoguyfication.Notpad
 		{
 			InitializeComponent();
 		}
-
-		private void DiscoverServers()
-		{
-
-		}
 	}
 }

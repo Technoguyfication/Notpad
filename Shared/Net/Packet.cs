@@ -21,7 +21,7 @@ namespace Technoguyfication.Notpad.Net
 			}
 		}
 
-		private static Dictionary<PacketId, Type> _packetTypes;
+		private static readonly Dictionary<PacketId, Type> _packetTypes;
 
 		static Packet()
 		{
@@ -62,6 +62,7 @@ namespace Technoguyfication.Notpad.Net
 		}
 	}
 
+	[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
 	public class NetworkPacket : Attribute
 	{
 		public PacketId Type { get; private set; }
@@ -74,10 +75,18 @@ namespace Technoguyfication.Notpad.Net
 	public enum PacketId : byte
 	{
 		// Serverbound packets
-		SQuery = 0x00,
+		SHandshake = 0x00,
+		SLogin = 0x01,
+		SMessage = 0x02,
 
 		// Clientbound packets
-		CQueryResponse = 0xF0
+		CQueryResponse = 0xF0,
+		CDisconnect = 0xF1,
+		CMessage = 0xF2,
+		CUserJoined = 0xF3,
+		CUserDisconnected = 0xF4,
+		CUserList = 0xF5,
+		CInvalidVersion = 0xF6
 	}
 
     [Serializable]

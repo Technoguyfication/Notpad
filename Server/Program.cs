@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Net;
-using Technoguyfication.Notpad.Shared;
+using Technoguyfication.Notpad.Shared.Net.Server;
 
 namespace Technoguyfication.Notpad.Dedicated
 {
@@ -8,11 +8,13 @@ namespace Technoguyfication.Notpad.Dedicated
 	{
 		static DedicatedServer _server;
 
+#pragma warning disable IDE0060
 		static void Main(string[] args)
+#pragma warning restore IDE0060
 		{
 			_server = new DedicatedServer();
 
-			_server.OnDiscoveryRequest += _server_DiscoveryEvent;
+			_server.OnDiscoveryRequest += Server_OnDiscoveryRequest;
 
 			_server.OnQuery += (sender, args) =>
 			{
@@ -25,12 +27,12 @@ namespace Technoguyfication.Notpad.Dedicated
 
 			Console.ReadLine();
 
-			_server.Stop();
+			_server.Stop(false);
 		}
 
-		private static void _server_DiscoveryEvent(object sender, BaseServer.DiscoveryEventArgs e)
+		private static void Server_OnDiscoveryRequest(object sender, BaseServer.DiscoveryEventArgs e)
 		{
-			Console.WriteLine($"Discovery from {e.RemoteEndPoint.ToString()}");
+			Console.WriteLine($"Discovery from {e.RemoteEndPoint}");
 		}
 	}
 }
