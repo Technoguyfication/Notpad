@@ -21,7 +21,23 @@ namespace Technoguyfication.Notpad.Shared.Net
 		{
 			ID = id;
 			Username = username;
+		}
 
+		public override bool Equals(object obj)
+		{
+			if (obj is not User u) return false;
+
+			return ID.Equals(u.ID);
+		}
+
+		public override int GetHashCode()
+		{
+			return ID.GetHashCode();
+		}
+
+		public override string ToString()
+		{
+			return $"{Username} / {ID}";
 		}
 	}
 }

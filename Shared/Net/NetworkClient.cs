@@ -9,94 +9,113 @@ using Technoguyfication.Notpad.Net;
 
 namespace Technoguyfication.Notpad.Shared.Net
 {
-    public class NetworkClient : TcpClient
-    {
-        // Expose TcpClient's "Active" property
-        new public bool Active => base.Active;
+	public class NetworkClient : TcpClient
+	{
+		// Expose TcpClient's "Active" property
+		new public bool Active => base.Active;
 
-        /// <summary>
-        /// Whether this client has data available to be read
-        /// </summary>
-        public bool DataAvailable => Client.Available > 0;
+		private readonly object _writeLock = new();
+		private readonly object _readLock = new();
 
-        public NetworkClient(Socket socket)
-        {
-            // set the underlying socket to the provided one
-            Client = socket;
-        }
+		/// <summary>
+		/// Whether this client has data available to be read
+		/// </summary>
+		public bool DataAvailable => Client.Available > 0;
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        /// <exception cref="IOException">Thrown when the client sends invalid data or closes the connection unexpectedly</exception>
-        public Packet ReceivePacket()
-        {
-            // read packet ID header
-            byte headerRaw = ReadBytes(1)[0];
-            
-            // check if a valid packet ID was provided
-            if (!Enum.IsDefined(typeof(PacketId), headerRaw))
-            {
-                throw new IOException($"Invalid Packet ID provided: {headerRaw}");
-            }
+		public NetworkClient(Socket socket)
+		{
+			// set the underlying socket to the provided one
+			Client = socket;
+		}
 
-            // get packet id
-            var packetId = Enum.Parse<PacketId>(Enum.GetName(typeof(PacketId), headerRaw));
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <returns></returns>
+		/// <exception cref="IOException">Thrown when the client sends invalid data or closes the connection unexpectedly</exception>
+		public Packet ReceivePacket()
+		{
+			lock (_readLock)
+			{
+				// read packet ID header
+				byte headerRaw = ReadBytes(1)[0];
 
-            // match packet ID with it's packet type
-            Type type = Packet.GetPacketType(packetId);
+				// check if a valid packet ID was provided
+				if (!Enum.IsDefined(typeof(PacketId), headerRaw))
+				{
+					throw new IOException($"Invalid Packet ID provided: {headerRaw}");
+				}
 
-            // create the packet object
-            Packet packet = (Packet)Activator.CreateInstance(type);
-            
-            // read packet length
-            byte[] lengthRaw = ReadBytes(sizeof(int));
-            int packetLength = Protocol.BytesToInt32(lengthRaw);
+				// get packet id
+				var packetId = Enum.Parse<PacketId>(Enum.GetName(typeof(PacketId), headerRaw));
 
-            // read packet body
-            var body = ReadBytes(packetLength);
+				// match packet ID with it's packet type
+				Type type = Packet.GetPacketType(packetId);
 
-            // deserialize packet
-            packet.Deserialize(body);
+				// create the packet object
+				Packet packet = (Packet)Activator.CreateInstance(type);
 
-            return packet;
-        }
+				// read packet length
+				byte[] lengthRaw = ReadBytes(sizeof(int));
+				int packetLength = Protocol.BytesToInt32(lengthRaw);
 
-        /// <summary>
-        /// Reads a specified amount of bytes from the network connection
-        /// </summary>
-        /// <param name="length"></param>
-        /// <returns></returns>
-        /// <exception cref="IOException">Thrown when the connection is closed during reading</exception>
-        private byte[] ReadBytes(int length)
-        {
-            var buffer = new byte[length];
+				// read packet body
+				var body = ReadBytes(packetLength);
 
-            // how many bytes we've received total so far
-            int total = 0;
+				// deserialize packet
+				packet.Deserialize(body);
 
-            do
-            {
-                // read data into buffer
-                var received = Client.Receive(buffer, total, length - total, SocketFlags.None);
+				return packet;
+			}
+		}
 
-                // if read returns 0 bytes the connection has closed
-                if (received == 0) throw new IOException("Connection closed");
+		public void WritePacket(Packet packet)
+		{
+			lock (_writeLock)
+			{
+				// write header
+				Client.Send(new byte[]{ (byte)packet.ID });
 
-                total += received;
-            } while (total < length);    // repeat until buffer is filled
+				// packet data (evalating this property serializes the packet so it is a heavy operation)
+				var bytes = packet.Bytes;
 
-            return buffer;
-        }
+				// write packet length
+				byte[] lengthRaw = Protocol.Int32ToBytes(bytes.Length);
+				Client.Send(lengthRaw);
 
-        public void SendPacket(Packet packet)
-        {
-            var bytes = packet.Bytes;
+				// write packet data
+				Client.Send(bytes);
+			}
+		}
 
-            // todo implement header
+		/// <summary>
+		/// Reads a specified amount of bytes from the network connection
+		/// </summary>
+		/// <param name="length"></param>
+		/// <returns></returns>
+		/// <exception cref="IOException">Thrown when the connection is closed during reading</exception>
+		private byte[] ReadBytes(int length)
+		{
+			lock (_readLock)
+			{
+				var buffer = new byte[length];
 
-            Client.Send(bytes);
-        }
-    }
+				// how many bytes we've received total so far
+				int total = 0;
+
+				do
+				{
+					// read data into buffer
+					var received = Client.Receive(buffer, total, length - total, SocketFlags.None);
+
+					// if read returns 0 bytes the connection has closed
+					if (received == 0) throw new IOException("Connection closed");
+
+					total += received;
+				} while (total < length);    // repeat until buffer is filled
+
+				return buffer;
+			}
+		}
+	}
 }

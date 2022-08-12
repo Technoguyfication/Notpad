@@ -18,15 +18,14 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
         public IPEndPoint RemoteEndPoint => _networkClient?.Client?.RemoteEndPoint as IPEndPoint;
         public ClientStatus Status { get; private set; }
 
-        private bool _initialized = false;
+		public event EventHandler OnLogin;
+		public event EventHandler OnDisconnect;
+
         private bool _disconnecting = false;
         private readonly object _disconnectLock = new();
 
-
         private readonly NetworkClient _networkClient;
-#pragma warning disable IDE0052 // We may want to use this reference later, so suppress the warning for now
 		private readonly BaseServer _server;
-#pragma warning restore IDE0052
 
 		private readonly ConcurrentQueue<Packet> _packetQueue;
 
@@ -36,6 +35,8 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
         /// <param name="client"></param>
         public ServerUser(NetworkClient client, BaseServer server)
         {
+            Status = ClientStatus.Uninitialized;
+            
             _networkClient = client;
             _server = server;
 
@@ -61,12 +62,13 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
                 }
             });
 
-            _initialized = true;
+			// login status means we are waiting for client to log in
+			Status = ClientStatus.Login;
         }
 
         public void Tick()
         {
-            if (!_initialized) throw new InvalidOperationException("User not initialized");
+            if (Status == ClientStatus.Uninitialized) throw new InvalidOperationException("User not initialized");
 
             // handle packets
             while (!_packetQueue.IsEmpty)
@@ -105,7 +107,7 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
             {
                 try
                 {
-                    _networkClient.SendPacket(new CDisconnectPacket() { Reason = reason });
+                    _networkClient.WritePacket(new CDisconnectPacket() { Reason = reason });
                 }
                 catch (IOException)
                 {
@@ -115,13 +117,39 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 
             _networkClient?.Close();
 
-            // call base disconnect to raise event
-            Disconnect();
+            // raise disconnect event
+            OnDisconnect?.Invoke(this, null);
         }
 
         private void HandlePacket(Packet packet)
         {
-            throw new NotImplementedException();
+            switch (packet)
+            {
+                case SLoginPacket loginPacket:
+                    Packet_Login(loginPacket);
+                    break;
+
+                default:
+                    throw new NotImplementedException($"Unable to handle packet of type {packet.GetType().Name}");
+            }
+        }
+
+        private void Packet_Login(SLoginPacket packet)
+        {
+            // check for valid user login
+            (var validLogin, string loginFailReason) = _server.UserLoginRequest(packet.UserID, packet.Username);
+
+			if (!validLogin)
+            {
+                Disconnect($"Failed to login: ${loginFailReason}", false);
+                return;
+            }
+
+            // user is logged in
+            Status = ClientStatus.Ready;
+
+            // raise disconnect event
+            OnLogin?.Invoke(this, null);
         }
 
         private async Task Worker_NetworkRead()

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Technoguyfication.Notpad.Net;
 using Technoguyfication.Notpad.Net.Packets;
 using Technoguyfication.Notpad.Shared.Net.Packets;
+using Technoguyfication.Notpad.Shared.Net.Structs;
 
 namespace Technoguyfication.Notpad.Shared.Net.Server
 {
@@ -20,6 +21,20 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 		public int MaxUsers { get; private set; }
 		public int UsersOnline => _users.Where(c => c.Status == ClientStatus.Ready || c.Status == ClientStatus.Login).Count();
 
+		public ServerInfo ServerInfo
+		{
+			get
+			{
+				return new ServerInfo()
+				{
+					Name = ServerName,
+					MOTD = MOTD,
+					MaxUsers = MaxUsers,
+					UsersOnline = UsersOnline
+				};
+			}
+		}
+
 		// basic events
 		public event EventHandler OnStarted;
 		public event EventHandler OnStopped;
@@ -27,10 +42,6 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 		// log events
 		public event EventHandler<Exception> OnException;
 		public event EventHandler<string> OnDebugMessage;
-
-		// network query events
-		public event EventHandler<DiscoveryEventArgs> OnDiscoveryRequest;
-		public event EventHandler<IPEndPoint> OnQuery;
 
 		// user-based events
 		public event EventHandler<ServerUser> OnUserJoin;
@@ -120,9 +131,48 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 			OnStopped?.Invoke(this, null);
 		}
 
+		/// <summary>
+		/// Validates user login requests.
+		/// Checks uniqueness of user id and username requirements
+		/// </summary>
+		/// <param name="userId"></param>
+		/// <param name="username"></param>
+		/// <returns></returns>
+		public (bool, string) UserLoginRequest(Guid userId, string username)
+		{
+			Debug($"Checking username for {userId}: {username}");
+
+			// check for duplicate guid
+			if (_users.Where(u => u.ID.Equals(userId)).Any())
+			{
+				return (false, "User ID already logged in. If you have recently disconnected, wait a minute and try again");
+			}
+
+			// check for username requirements
+			if (username.Length > Protocol.UsernameMaxLength || username.Length < Protocol.UsernameMinLength)
+			{
+				return (false, $"Username must be between {Protocol.UsernameMinLength} and {Protocol.UsernameMaxLength} characters");
+			}
+			else if (Protocol.UsernameRegex.IsMatch(username))
+			{
+				return (false, "Username must only contain letters, numbers, and underscores");
+			}
+
+			// check duplicate username
+			if (_users.Where(u => u.Username.Equals(username)).Any())
+			{
+				return (false, "This username is already taken on this server");
+			}
+
+			// all checks passed
+			return (true, null);
+		}
+
 		private void User_OnDisconnect(object sender, EventArgs e)
 		{
 			var user = sender as ServerUser;
+
+			Debug($"{user} is disconnecting");
 
 			// todo: send all users disconnect message
 
@@ -131,6 +181,8 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 
 			// remove user from users list
 			_users.Remove(user);
+
+			Debug($"{user} fully disconnected");
 		}
 
 		/// <summary>
@@ -141,6 +193,8 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 		/// <param name="client"></param>
 		private void AddUser(NetworkClient client)
 		{
+			Debug($"Adding new user from {client.Client.RemoteEndPoint}");
+
 			// the client should have sent a login packet immediately after the login intent packet
 			// so we upgrade this client into a User and the User's internal packet handler will
 			// handle the login process
@@ -169,14 +223,14 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 				var socket = await _listener.AcceptSocketAsync();
 				var networkClient = new NetworkClient(socket);
 
-				Packet packet = null;
+				Packet packet;
 				try
 				{
 					packet = networkClient.ReceivePacket();
 				}
 				catch (IOException ex)
 				{
-					OnDebugMessage?.Invoke(this, $"Socket at {networkClient.Client.RemoteEndPoint} failed to become a client: {ex.Message}");
+					Debug($"Socket at {networkClient.Client.RemoteEndPoint} failed to become a client: {ex.Message}");
 
 					networkClient.Close();
 					continue;
@@ -185,7 +239,7 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 				// initial packet must be a handshake packet
 				if (packet is not SHandshakePacket)
 				{
-					OnDebugMessage?.Invoke(this, $"Client at {networkClient.Client.RemoteEndPoint} did not send a handshake packet as initial packet, sent {packet.GetType().Name} instead");
+					Debug($"Client at {networkClient.Client.RemoteEndPoint} did not send a handshake packet as initial packet, sent {packet.GetType().Name} instead");
 
 					networkClient.Close();
 					continue;
@@ -196,7 +250,7 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 				// check for compatible protocol version
 				if (hsPacket.ProtocolVersion != Protocol.Version)
 				{
-					networkClient.SendPacket(new CInvalidVersionPacket()
+					networkClient.WritePacket(new CInvalidVersionPacket()
 					{
 						ServerVersion = Protocol.Version
 					});
@@ -210,15 +264,19 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 				{
 					// client wants servery query
 					case SHandshakePacket.HandshakeIntent.Query:
-						OnQuery?.Invoke(this, (IPEndPoint)networkClient.Client.RemoteEndPoint);
+						Debug($"Query request from {networkClient.Client.RemoteEndPoint}");
 
-						networkClient.SendPacket(new CQueryResponsePacket()
+						networkClient.WritePacket(new CQueryResponsePacket()
 						{
-							MaxUsers = MaxUsers,
-							UsersOnline = UsersOnline,
-							ServerName = ServerName,
-							MOTD = MOTD
+							ServerInfo = new ServerInfo()
+							{
+								Name = ServerName,
+								MOTD = MOTD,
+								MaxUsers = MaxUsers,
+								UsersOnline = UsersOnline
+							}
 						});
+
 						networkClient.Close();
 						break;
 
@@ -236,7 +294,8 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 			while (_udpClient?.Client?.Blocking ?? false)
 			{
 				var data = await _udpClient.ReceiveAsync();
-				OnDiscoveryRequest?.Invoke(this, new DiscoveryEventArgs() { RemoteEndPoint = data.RemoteEndPoint });
+
+				Debug($"Discovery request from {data.RemoteEndPoint}");
 
 				// check if the client is a Notpad client
 				if (data.Buffer.SequenceEqual(Protocol.BroadcastMessage))
@@ -245,6 +304,11 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 					await _udpClient.SendAsync(Protocol.BroadcastMessage, Protocol.BroadcastMessage.Length, data.RemoteEndPoint);
 				}
 			}
+		}
+
+		private void Debug(string message)
+		{
+			OnDebugMessage?.Invoke(this, message);
 		}
 
 		public class DiscoveryEventArgs : EventArgs

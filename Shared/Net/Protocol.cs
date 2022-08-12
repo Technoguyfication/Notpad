@@ -1,12 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Technoguyfication.Notpad.Shared.Net
 {
     public static class Protocol
     {
         public static readonly byte[] BroadcastMessage = new byte[] { (byte)'N', (byte)'o', (byte)'t', (byte)'p', (byte)'a', (byte)'d', (byte)'D', (byte)'i', (byte)'s', (byte)'c', (byte)'o', (byte)'v', (byte)'e', (byte)'r' };
+
+        public static readonly int UsernameMinLength = 3;
+        public static readonly int UsernameMaxLength = 20;
+        public static readonly Regex UsernameRegex = new Regex(@"^\w+$");
 
         /// <summary>
         /// Protocol version

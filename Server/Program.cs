@@ -13,26 +13,15 @@ namespace Technoguyfication.Notpad.Dedicated
 #pragma warning restore IDE0060
 		{
 			_server = new DedicatedServer();
-
-			_server.OnDiscoveryRequest += Server_OnDiscoveryRequest;
-
-			_server.OnQuery += (sender, args) =>
-			{
-				Console.WriteLine("Server query received");
-			};
-
 			_server.Start(42069, IPAddress.Any);
 
-			Console.WriteLine("Server running on port 42069");
+			// set up event handlers
+			_server.OnDebugMessage += (s, e) => Console.WriteLine(e.ToString());
 
-			Console.ReadLine();
+			Console.WriteLine("Server running on port 42069");
+			Console.ReadLine();	// pause here
 
 			_server.Stop(false);
-		}
-
-		private static void Server_OnDiscoveryRequest(object sender, BaseServer.DiscoveryEventArgs e)
-		{
-			Console.WriteLine($"Discovery from {e.RemoteEndPoint}");
 		}
 	}
 }

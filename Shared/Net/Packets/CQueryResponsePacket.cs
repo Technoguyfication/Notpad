@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Technoguyfication.Notpad.Net;
+using Technoguyfication.Notpad.Shared.Net.Structs;
 using Technoguyfication.Notpad.Shared.Net.Utility;
 
 namespace Technoguyfication.Notpad.Shared.Net.Packets
@@ -12,29 +13,44 @@ namespace Technoguyfication.Notpad.Shared.Net.Packets
     [NetworkPacket(PacketId.CQueryResponse)]
     public class CQueryResponsePacket : Packet
     {
-        public string ServerName { get => _serverName; set => _serverName = value; }
+        public ServerInfo ServerInfo
+        {
+            get
+            {
+                return new ServerInfo()
+                {
+                    Name = _serverName,
+                    MOTD = _motd,
+                    MaxUsers = _maxUsers,
+                    UsersOnline = _usersOnline
+                };
+            }
+
+            set
+            {
+                _serverName = value.Name;
+                _maxUsers = value.MaxUsers;
+                _usersOnline = value.UsersOnline;
+                _motd = value.MOTD;
+            }
+        }
+        
         private string _serverName;
-
-        public int MaxUsers { get => _maxUsers; set => _maxUsers = value; }
-        private int _maxUsers;
-
-        public int UsersOnline { get => _usersOnline; set => _usersOnline = value; }
+		private string _motd;
+		private int _maxUsers;
         private int _usersOnline;
-
-        public string MOTD { get => _motd; set => _motd = value; }
-        private string _motd;
 
         public override byte[] Bytes
         {
             get
             {
-                // todo use "using" here for better memory management
+                using var writer = new PacketWriter();
                 
-                return new PacketWriter()
-                    .WriteString(ServerName)
-                    .WriteInt32(MaxUsers)
-                    .WriteInt32(UsersOnline)
-                    .WriteString(MOTD)
+                return writer
+                    .WriteString(_serverName)
+                    .WriteString(_motd)
+					.WriteInt32(_maxUsers)
+                    .WriteInt32(_usersOnline)
 
                     .ToArray();
             }
@@ -42,13 +58,13 @@ namespace Technoguyfication.Notpad.Shared.Net.Packets
 
         public override void Deserialize(byte[] bytes)
         {
-            // todo use "using" here for better memory management
+            using var reader = new PacketReader(bytes);
 
-            new PacketReader(bytes)
+            reader
                 .ReadString(out _serverName)
+                .ReadString(out _motd)
                 .ReadInt32(out _maxUsers)
-                .ReadInt32(out _usersOnline)
-                .ReadString(out _motd);
+                .ReadInt32(out _usersOnline);
         }
     }
 }
