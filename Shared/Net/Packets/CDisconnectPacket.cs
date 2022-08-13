@@ -13,16 +13,13 @@ namespace Technoguyfication.Notpad.Shared.Net.Packets
 		public string Reason { get => _reason; set => _reason = value; }
 		private string _reason;
 
-		public override byte[] Bytes
+		public override byte[] Serialize()
 		{
-			get
-			{
-				using var writer = new PacketWriter();
-				
-				return writer.WriteString(Reason)
+			using var writer = new PacketWriter();
 
-					.ToArray();
-			}
+			return writer.WriteString(Reason)
+
+				.ToArray();
 		}
 
 		public override void Deserialize(byte[] bytes)

@@ -39,23 +39,20 @@ namespace Technoguyfication.Notpad.Shared.Net.Packets
 		private int _maxUsers;
         private int _usersOnline;
 
-        public override byte[] Bytes
-        {
-            get
-            {
-                using var writer = new PacketWriter();
-                
-                return writer
-                    .WriteString(_serverName)
-                    .WriteString(_motd)
-					.WriteInt32(_maxUsers)
-                    .WriteInt32(_usersOnline)
+		public override byte[] Serialize()
+		{
+			using var writer = new PacketWriter();
 
-                    .ToArray();
-            }
-        }
+			return writer
+				.WriteString(_serverName)
+				.WriteString(_motd)
+				.WriteInt32(_maxUsers)
+				.WriteInt32(_usersOnline)
 
-        public override void Deserialize(byte[] bytes)
+				.ToArray();
+		}
+
+		public override void Deserialize(byte[] bytes)
         {
             using var reader = new PacketReader(bytes);
 

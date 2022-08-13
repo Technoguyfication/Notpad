@@ -88,7 +88,7 @@ namespace Technoguyfication.Notpad.Shared.Net
 				Client.Send(new byte[]{ (byte)packet.ID });
 
 				// packet data (evalating this property serializes the packet so it is a heavy operation)
-				var bytes = packet.Bytes;
+				var bytes = packet.Serialize();
 
 				// write packet length
 				byte[] lengthRaw = Protocol.Int32ToBytes(bytes.Length);

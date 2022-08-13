@@ -9,8 +9,7 @@ namespace Technoguyfication.Notpad.Shared.Net
 {
 	public abstract class Packet
 	{
-		public abstract byte[] Bytes { get; }
-
+		public abstract byte[] Serialize();
 		public abstract void Deserialize(byte[] bytes);
 
 		public PacketId ID

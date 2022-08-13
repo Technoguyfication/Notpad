@@ -13,17 +13,14 @@ namespace Technoguyfication.Notpad.Shared.Net.Packets
 		public int ServerVersion { get => _serverVersion; set => _serverVersion = value; }
 		private int _serverVersion;
 
-		public override byte[] Bytes
+		public override byte[] Serialize()
 		{
-			get
-			{
-				using var writer = new PacketWriter();
-				
-				return writer
-					.WriteInt32(_serverVersion)
+			using var writer = new PacketWriter();
 
-					.ToArray();
-			}
+			return writer
+				.WriteInt32(_serverVersion)
+
+				.ToArray();
 		}
 
 		public override void Deserialize(byte[] bytes)

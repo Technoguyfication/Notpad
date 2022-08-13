@@ -16,18 +16,15 @@ namespace Technoguyfication.Notpad.Shared.Net.Packets
 		public string Username { get => _username; set => _username = value; }
 		private string _username;
 
-		public override byte[] Bytes
+		public override byte[] Serialize()
 		{
-			get
-			{
-				using var writer = new PacketWriter();
-				
-				return writer
-					.WriteGuid(_userId)
-					.WriteString(_username)
+			using var writer = new PacketWriter();
 
-					.ToArray();
-			}
+			return writer
+				.WriteGuid(_userId)
+				.WriteString(_username)
+
+				.ToArray();
 		}
 
 		public override void Deserialize(byte[] bytes)
