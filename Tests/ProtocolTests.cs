@@ -7,9 +7,20 @@ namespace Technoguyfication.Notpad.Tests
 	public class ProtocolTests
 	{
 		[TestMethod]
-		public void CheckPacketClassInitialization()
+		public void AllPacketTypesDefined()
 		{
-			Assert.AreEqual(Packet.GetPacketType(PacketId.SHandshake), typeof(SHandshakePacket));
+			// Check that all packet IDs have an associated type
+			foreach (var packetId in Enum.GetValues(typeof(PacketId)).Cast<PacketId>())
+			{
+				try
+				{
+					Packet.GetPacketType(packetId);
+				}
+				catch (KeyNotFoundException)
+				{
+					throw new NotImplementedException($"Packet ID {Enum.GetName(typeof(PacketId), packetId)} does not have a Type associated with it");
+				}
+			}
 		}
 	}
 }

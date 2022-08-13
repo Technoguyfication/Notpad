@@ -44,7 +44,7 @@ namespace Technoguyfication.Notpad.Net
 			var queryTask = Task.Run(async () =>
 			{
 				// try to connect to the server
-				await queryClient.ConnectAsync(endpoint).ConfigureAwait(false);
+				await queryClient.ConnectAsync(endpoint);
 
 				// send handshake with query intent
 				queryClient.WritePacket(new SHandshakePacket()

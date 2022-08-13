@@ -35,7 +35,7 @@ namespace Technoguyfication.Notpad
 				// run query
 				try
 				{
-					var result = await ClientUser.QueryServer(ep, TimeSpan.FromSeconds(10));
+					var result = await ClientUser.QueryServer(ep, TimeSpan.FromSeconds(10000));
 
 					context.Send((obj) =>
 					{
@@ -46,7 +46,7 @@ namespace Technoguyfication.Notpad
 				{
 					context.Send((obj) =>
 					{
-						queryResponseTextBox.Text = $"Received {ex.GetType().Name}: {ex.Message}\n\n{ex.InnerException.Message}";
+						queryResponseTextBox.Text = $"Received {ex.GetType().Name}: {ex.Message}\n\n{ex?.InnerException?.Message}";
 					}, null);
 				}
 			});

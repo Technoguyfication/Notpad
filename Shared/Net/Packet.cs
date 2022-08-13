@@ -42,12 +42,6 @@ namespace Technoguyfication.Notpad.Shared.Net
                     _packetTypes.Add(packetAttrib.Type, type);
 				}
 			}
-
-			// Check that all packet IDs have an associated type
-			foreach (var packetId in Enum.GetValues(typeof(PacketId)).Cast<PacketId>())
-			{
-				if (!_packetTypes.ContainsKey(packetId)) throw new NotImplementedException($"Packet ID {Enum.GetName(typeof(PacketId), packetId)} does not have a Type associated with it");
-			}
 		}
 
 		/// <summary>

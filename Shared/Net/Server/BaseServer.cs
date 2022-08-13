@@ -221,6 +221,8 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 				var socket = await _listener.AcceptSocketAsync();
 				var networkClient = new NetworkClient(socket);
 
+				Debug($"Accepting connection from {networkClient.Client.RemoteEndPoint}");
+
 				Packet packet;
 				try
 				{

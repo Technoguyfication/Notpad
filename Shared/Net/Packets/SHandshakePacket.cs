@@ -17,7 +17,7 @@ namespace Technoguyfication.Notpad.Shared.Net.Packets
 		public HandshakeIntent Intent { get => _intent; set => _intent = value; }
 		private HandshakeIntent _intent;
 
-		public override byte[] Bytes => Array.Empty<byte>();
+		public override byte[] Bytes => Array.Empty<byte>();	// todo implement thsi
 
 		public override void Deserialize(byte[] bytes) => Expression.Empty();
 

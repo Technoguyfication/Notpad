@@ -87,6 +87,7 @@ namespace Technoguyfication.Notpad
 			this.queryAddressTextBox.Name = "queryAddressTextBox";
 			this.queryAddressTextBox.Size = new System.Drawing.Size(227, 23);
 			this.queryAddressTextBox.TabIndex = 1;
+			this.queryAddressTextBox.Text = "127.0.0.1:42069";
 			// 
 			// queryResponseTextBox
 			// 
