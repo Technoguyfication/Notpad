@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using Technoguyfication.Notpad.Net;
 
 namespace Technoguyfication.Notpad.Shared.Net
 {
@@ -22,6 +21,18 @@ namespace Technoguyfication.Notpad.Shared.Net
 		/// </summary>
 		public bool DataAvailable => Client.Available > 0;
 
+		/// <summary>
+		/// Starts a new network client with a disconnected socket
+		/// </summary>
+		public NetworkClient()
+		{
+
+		}
+
+		/// <summary>
+		/// Create a network client out of an existing socket connection
+		/// </summary>
+		/// <param name="socket"></param>
 		public NetworkClient(Socket socket)
 		{
 			// set the underlying socket to the provided one
@@ -33,7 +44,7 @@ namespace Technoguyfication.Notpad.Shared.Net
 		/// </summary>
 		/// <returns></returns>
 		/// <exception cref="IOException">Thrown when the client sends invalid data or closes the connection unexpectedly</exception>
-		public Packet ReceivePacket()
+		public Packet ReadPacket()
 		{
 			lock (_readLock)
 			{

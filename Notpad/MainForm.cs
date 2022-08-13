@@ -17,5 +17,9 @@ namespace Technoguyfication.Notpad
 			InitializeComponent();
 		}
 
+		private void connectToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			new ConnectForm().ShowDialog();
+		}
 	}
 }

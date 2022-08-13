@@ -4,11 +4,12 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
+using Technoguyfication.Notpad.Shared.Net;
 
-namespace Technoguyfication.Notpad.Net.Packets
+namespace Technoguyfication.Notpad.Shared.Net.Packets
 {
 	[NetworkPacket(PacketId.SHandshake)]
-	class SHandshakePacket : Packet
+	public class SHandshakePacket : Packet
 	{
 		public int ProtocolVersion { get => _protocolVersion; set => _protocolVersion = value; }
 		private int _protocolVersion;

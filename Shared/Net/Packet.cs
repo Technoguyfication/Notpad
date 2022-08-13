@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Technoguyfication.Notpad.Net
+namespace Technoguyfication.Notpad.Shared.Net
 {
 	public abstract class Packet
 	{

@@ -43,6 +43,7 @@ namespace Technoguyfication.Notpad
 			this.mainStatusStripZoomLabel = new System.Windows.Forms.ToolStripStatusLabel();
 			this.mainStatusStripExtraLabel = new System.Windows.Forms.ToolStripStatusLabel();
 			this.mainStatusStripExtra2Label = new System.Windows.Forms.ToolStripStatusLabel();
+			this.connectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.mainMenuStrip.SuspendLayout();
 			this.mainStatusStrip.SuspendLayout();
 			this.SuspendLayout();
@@ -66,6 +67,8 @@ namespace Technoguyfication.Notpad
 			// 
 			// fileToolStripMenuItem
 			// 
+			this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.connectToolStripMenuItem});
 			this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
 			this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 18);
 			this.fileToolStripMenuItem.Text = "&File";
@@ -165,7 +168,14 @@ namespace Technoguyfication.Notpad
 			this.mainStatusStripExtra2Label.Text = "UTF-8 with BOM";
 			this.mainStatusStripExtra2Label.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 			// 
-			// Form1
+			// connectToolStripMenuItem
+			// 
+			this.connectToolStripMenuItem.Name = "connectToolStripMenuItem";
+			this.connectToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+			this.connectToolStripMenuItem.Text = "&Connect...";
+			this.connectToolStripMenuItem.Click += new System.EventHandler(this.connectToolStripMenuItem_Click);
+			// 
+			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -174,7 +184,7 @@ namespace Technoguyfication.Notpad
 			this.Controls.Add(this.textBox1);
 			this.Controls.Add(this.mainMenuStrip);
 			this.MainMenuStrip = this.mainMenuStrip;
-			this.Name = "Form1";
+			this.Name = "MainForm";
 			this.Text = "Notpad";
 			this.mainMenuStrip.ResumeLayout(false);
 			this.mainMenuStrip.PerformLayout();
@@ -200,6 +210,7 @@ namespace Technoguyfication.Notpad
 		private System.Windows.Forms.ToolStripStatusLabel mainStatusStripZoomLabel;
 		private System.Windows.Forms.ToolStripStatusLabel mainStatusStripExtraLabel;
 		private System.Windows.Forms.ToolStripStatusLabel mainStatusStripExtra2Label;
+		private System.Windows.Forms.ToolStripMenuItem connectToolStripMenuItem;
 	}
 }
 

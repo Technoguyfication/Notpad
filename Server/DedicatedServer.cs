@@ -9,6 +9,11 @@ namespace Technoguyfication.Notpad.Dedicated
 {
     class DedicatedServer : BaseServer
     {
-
+        public DedicatedServer(string name, string motd, int maxUsers)
+        {
+            ServerName = name;
+            MOTD = motd;
+            MaxUsers = maxUsers;
+        }
     }
 }

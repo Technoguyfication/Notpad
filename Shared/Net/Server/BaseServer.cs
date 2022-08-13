@@ -7,8 +7,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Technoguyfication.Notpad.Net;
-using Technoguyfication.Notpad.Net.Packets;
 using Technoguyfication.Notpad.Shared.Net.Packets;
 using Technoguyfication.Notpad.Shared.Net.Structs;
 
@@ -16,9 +14,9 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 {
 	public class BaseServer
 	{
-		public string ServerName { get; private set; }
-		public string MOTD { get; private set; }
-		public int MaxUsers { get; private set; }
+		public string ServerName { get; protected set; }
+		public string MOTD { get; protected set; }
+		public int MaxUsers { get; protected set; }
 		public int UsersOnline => _users.Where(c => c.Status == ClientStatus.Ready || c.Status == ClientStatus.Login).Count();
 
 		public ServerInfo ServerInfo
@@ -55,7 +53,7 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 		private bool _stopping = false;
 		private readonly object _stoppingLock = new();
 
-		public BaseServer()
+		protected BaseServer()
 		{
 			_users = new List<ServerUser>();
 		}
@@ -226,7 +224,7 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 				Packet packet;
 				try
 				{
-					packet = networkClient.ReceivePacket();
+					packet = networkClient.ReadPacket();
 				}
 				catch (IOException ex)
 				{

@@ -8,7 +8,6 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Technoguyfication.Notpad.Net;
 using Technoguyfication.Notpad.Shared.Net.Packets;
 
 namespace Technoguyfication.Notpad.Shared.Net.Server
@@ -166,7 +165,7 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
                 while (Status == ClientStatus.Ready)
                 {
                     // read next packet from network
-                    var packet = _networkClient.ReceivePacket();
+                    var packet = _networkClient.ReadPacket();
 
                     // add packet to packet queue
                     _packetQueue.Enqueue(packet);

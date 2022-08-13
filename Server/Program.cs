@@ -12,7 +12,7 @@ namespace Technoguyfication.Notpad.Dedicated
 		static void Main(string[] args)
 #pragma warning restore IDE0060
 		{
-			_server = new DedicatedServer();
+			_server = new DedicatedServer("Testing Server", "I have no idea what to write as a MOTD. Why did I even write this feature?", 69);
 			_server.Start(42069, IPAddress.Any);
 
 			// set up event handlers
