@@ -58,7 +58,8 @@ namespace Technoguyfication.Notpad.Shared.Net
 				}
 
 				// get packet id
-				var packetId = Enum.Parse<PacketId>(Enum.GetName(typeof(PacketId), headerRaw));
+				//var packetId = Enum.Parse<PacketId>(Enum.GetName(typeof(PacketId), headerRaw));
+				var packetId = (PacketId)headerRaw;
 
 				// match packet ID with it's packet type
 				Type type = Packet.GetPacketType(packetId);
