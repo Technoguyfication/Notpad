@@ -14,6 +14,8 @@ namespace Technoguyfication.Notpad
 {
 	public partial class ConnectForm : Form
 	{
+		private MainForm _mainForm;
+
 		public ConnectForm()
 		{
 			InitializeComponent();

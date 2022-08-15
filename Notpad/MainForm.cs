@@ -7,13 +7,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Technoguyfication.Notpad.Net;
 
 namespace Technoguyfication.Notpad
 {
 	public partial class MainForm : Form
 	{
+		internal ClientUser Client { get; }
+
 		public MainForm()
 		{
+			Client = new ClientUser();
+
 			InitializeComponent();
 		}
 
