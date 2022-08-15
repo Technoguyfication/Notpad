@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using Technoguyfication.Notpad.Shared.Net;
+using Technoguyfication.Notpad.Shared.Net.Utility;
 
 namespace Technoguyfication.Notpad.Shared.Net.Packets
 {
@@ -19,10 +20,23 @@ namespace Technoguyfication.Notpad.Shared.Net.Packets
 
 		public override byte[] Serialize()
 		{
-			return Array.Empty<byte>(); // todo implement thsi
+			using var writer = new PacketWriter();
+
+			return writer
+				.WriteInt32(_protocolVersion)
+				.WriteByte((byte)_intent)
+				.ToArray();
 		}
 
-		public override void Deserialize(byte[] bytes) => Expression.Empty();
+		public override void Deserialize(byte[] bytes)
+		{
+			using var reader = new PacketReader(bytes);
+
+			reader.ReadInt32(out _protocolVersion);
+
+			reader.ReadByte(out var _intentByte);
+			_intent = (HandshakeIntent)_intentByte;
+		}
 
 		public enum HandshakeIntent : byte
 		{

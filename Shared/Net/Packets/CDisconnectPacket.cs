@@ -17,8 +17,8 @@ namespace Technoguyfication.Notpad.Shared.Net.Packets
 		{
 			using var writer = new PacketWriter();
 
-			return writer.WriteString(Reason)
-
+			return writer
+				.WriteString(Reason)
 				.ToArray();
 		}
 

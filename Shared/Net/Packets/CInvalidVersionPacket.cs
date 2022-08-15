@@ -19,7 +19,6 @@ namespace Technoguyfication.Notpad.Shared.Net.Packets
 
 			return writer
 				.WriteInt32(_serverVersion)
-
 				.ToArray();
 		}
 

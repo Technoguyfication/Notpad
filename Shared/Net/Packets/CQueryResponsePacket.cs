@@ -35,24 +35,24 @@ namespace Technoguyfication.Notpad.Shared.Net.Packets
         }
         
         private string _serverName;
-		private string _motd;
-		private int _maxUsers;
+        private string _motd;
+        private int _maxUsers;
         private int _usersOnline;
 
-		public override byte[] Serialize()
-		{
-			using var writer = new PacketWriter();
+        public override byte[] Serialize()
+        {
+            using var writer = new PacketWriter();
 
-			return writer
-				.WriteString(_serverName)
-				.WriteString(_motd)
-				.WriteInt32(_maxUsers)
-				.WriteInt32(_usersOnline)
+            return writer
+                .WriteString(_serverName)
+                .WriteString(_motd)
+                .WriteInt32(_maxUsers)
+                .WriteInt32(_usersOnline)
 
-				.ToArray();
-		}
+                .ToArray();
+        }
 
-		public override void Deserialize(byte[] bytes)
+        public override void Deserialize(byte[] bytes)
         {
             using var reader = new PacketReader(bytes);
 
