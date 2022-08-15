@@ -147,7 +147,12 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
             // user is logged in
             Status = ClientStatus.Ready;
 
-            // raise disconnect event
+            /**
+             * Some explanation is needed here:
+             * When we fire the OnLogin event, the server will broadcast a CUserJoined packet
+             * to _all_ clients, including this one since the Status is Ready. The client will
+             * use this broadcasted packet as confirmation that it has joined successfully.
+             * */
             OnLogin?.Invoke(this, null);
         }
 

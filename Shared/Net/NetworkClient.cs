@@ -40,10 +40,10 @@ namespace Technoguyfication.Notpad.Shared.Net
 		}
 
 		/// <summary>
-		/// 
+		/// Reads the next packet available from the network stream. Blocks until an entire packet is available to be read
 		/// </summary>
 		/// <returns></returns>
-		/// <exception cref="IOException">Thrown when the client sends invalid data or closes the connection unexpectedly</exception>
+		/// <exception cref="IOException">Thrown when the peer sends invalid data or closes the connection unexpectedly</exception>
 		public Packet ReadPacket()
 		{
 			lock (_readLock)
@@ -75,9 +75,28 @@ namespace Technoguyfication.Notpad.Shared.Net
 				var body = ReadBytes(packetLength);
 
 				// deserialize packet
-				packet.Deserialize(body);
+				try
+				{
+					packet.Deserialize(body);
+				}
+				catch (Exception ex)
+				{
+					throw new PacketFormatException("Failed to deserialize packet, see inner exception", ex);
+				}
 
 				return packet;
+			}
+		}
+
+		public void WritePacket(Packet[] packets)
+		{
+			// lock so these packets are sent in order with nothing in between
+			lock (_writeLock)
+			{
+				foreach (var packet in packets)
+				{
+					WritePacket(packet);
+				}
 			}
 		}
 
@@ -86,7 +105,7 @@ namespace Technoguyfication.Notpad.Shared.Net
 			lock (_writeLock)
 			{
 				// write header
-				Client.Send(new byte[]{ (byte)packet.ID });
+				Client.Send(new byte[] { (byte)packet.ID });
 
 				// packet data (evalating this property serializes the packet so it is a heavy operation)
 				var bytes = packet.Serialize();

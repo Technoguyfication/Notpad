@@ -14,11 +14,119 @@ namespace Technoguyfication.Notpad.Net
 {
 	class ClientUser : NetworkedUser
 	{
+		public ClientStatus Status { get; private set; }
+
+		public event EventHandler OnConnected;
+
 		private NetworkClient _client;
+
+		private bool _disconnecting = false;
 
 		public ClientUser()
 		{
+			Status = ClientStatus.Disconnected;
+		}
 
+		/// <summary>
+		/// Attempts to connect to the server. The return value will indicate whether the connection succeeded under normal conditions
+		/// (i.e. everything is functioning correctly but the client is unable to join due to a username conflict or the server is full)
+		/// </summary>
+		/// <param name="endpoint"></param>
+		/// <returns cref="(bool, string)">A tuple containing a bool to indicate success, and optional string as the rejection message on failure</returns>
+		/// <exception cref="IncompatibleProtocolVersionException">Thrown if we try to query a server with an incompatible protocol version</exception>
+		/// <exception cref="InvalidOperationException">Thrown if the client is not in a state to connect (eg. already connected or attempting to connect)</exception>
+		/// <exception cref="IOException">Thrown if we are unable to communicate with the server</exception>
+		/// <exception cref="SocketException">Thrown if we are unable to establish a connection to the server</exception>
+		/// <exception cref="TimeoutException">Thrown if the operation does not complete within the specified amount of time</exception>
+		public async Task<(bool, string)> Connect(IPEndPoint endpoint, TimeSpan timeout)
+		{
+			// validate client state
+			if (Status != ClientStatus.Disconnected) throw new InvalidOperationException("Client is already connected");
+
+			// set client state variables
+			_disconnecting = false;
+			Status = ClientStatus.Connecting;
+
+			_client = new NetworkClient();
+
+			// drop into another task so we can use a timeout on the entire operation
+			var connectTask = Task.Run(async () =>
+			{
+				// connect to the server 
+				await _client.ConnectAsync(endpoint);
+
+				// the client is now in Login phase
+				Status = ClientStatus.Login;
+
+				// send a handshake packet with login intent followed by a login packet
+				_client.WritePacket(new Packet[] {
+					new SHandshakePacket()
+					{
+						Intent = SHandshakePacket.HandshakeIntent.Login,
+						ProtocolVersion = Protocol.Version
+					},
+					new SLoginPacket()
+					{
+						UserID = this.ID,
+						Username = this.Username
+					}
+				});
+
+				// read response packet
+				// this may throw a IOException if the socket is closed, it will float up to the caller
+				var responsePacket = _client.ReadPacket();
+
+				// handle possible response packets
+				if (responsePacket is CUserJoinedPacket ujPkt && ujPkt.NewUser.Equals(this))
+				{
+					// a CUserJoined packet is fired for this user if we successfully join the server
+
+					// client has successfully logged in
+					Status = ClientStatus.Connected;
+
+					// we're done for now. add additional post-login logic here if needed
+					return (true, null);
+				}
+				else if (responsePacket is CDisconnectPacket dcPkt)
+				{
+					// the server has disconnected us for some reason.
+					return (false, dcPkt.Reason);
+				}
+				else if (responsePacket is CInvalidVersionPacket ivPkt)
+				{
+					// we're using an incompatible protocol version
+					throw new IncompatibleProtocolVersionException(ivPkt.ServerVersion);
+				}
+				else
+				{
+					throw new IOException($"Unexpected packet {responsePacket.ID} returned by server after login attempt");
+				}
+			});
+
+			// wait for the above task to complete, or the timeout to expire
+			try
+			{
+				return await connectTask.WaitAsync(timeout);
+			}
+			catch (TimeoutException)
+			{
+				// dispose the client on timeout because the task will continue running in the background
+				// this should kill any pending operations and allow the task to complete
+				_client.Close();
+				throw;
+			}
+		}
+
+		public void Disconnect()
+		{
+			// only call disconnect once
+			if (_disconnecting) return;
+			_disconnecting = true;
+
+			// close client if it exists
+			_client?.Close();
+
+			Status = ClientStatus.Disconnected;
 		}
 
 		public override void SetUsername(string username)
@@ -83,6 +191,14 @@ namespace Technoguyfication.Notpad.Net
 				queryClient.Close();
 				throw;
 			}
+		}
+
+		internal enum ClientStatus
+		{
+			Disconnected,
+			Connecting,
+			Login,
+			Connected
 		}
 	}
 }
