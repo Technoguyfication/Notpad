@@ -52,6 +52,7 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 
 		private bool _stopping = false;
 		private readonly object _stoppingLock = new();
+		private bool _started = false;
 
 		protected BaseServer()
 		{
@@ -60,6 +61,9 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 
 		public void Start(int port, IPAddress bindAddress)
 		{
+			// Server can only ever be started once
+			if (_started) throw new InvalidOperationException("Server has already been started");
+
 			// start tcp listener
 			_listener = new TcpListener(bindAddress, port);
 			_listener.Start();
@@ -95,6 +99,7 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 				}
 			});
 
+			_started = true;
 			OnStarted?.Invoke(this, null);
 		}
 
