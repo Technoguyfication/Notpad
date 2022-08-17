@@ -67,6 +67,12 @@ namespace Technoguyfication.Notpad.Shared.Net
 
 	public enum PacketId : byte
 	{
+		/*
+		 * The first character of the packet name denotes it's destination
+		 * C -> Clientbound packet sent from server
+		 * S -> Serverbound packet sent from client
+		 * */
+
 		// Serverbound packets
 		SHandshake = 0x00,
 		SLogin = 0x01,

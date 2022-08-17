@@ -159,6 +159,33 @@ namespace Technoguyfication.Notpad.Net
 			throw new NotImplementedException();
 		}
 
+		private void HandlePacket(Packet packet)
+		{
+			switch (packet)
+			{
+				case CUserListPacket userListPacket:
+					Packet_UserList(userListPacket);
+					break;
+			}
+		}
+
+		private void Packet_UserList(CUserListPacket userListPacket)
+		{
+			throw new NotImplementedException();
+		}
+
+		private User GetUser(Guid id)
+		{
+			if (_users.ContainsKey(id))
+			{
+				return _users[id];
+			}
+			else
+			{
+				return null;
+			}
+		}
+
 		/// <summary>
 		/// Queries a remote server for information such as server name, motd, and user count
 		/// </summary>
@@ -215,18 +242,6 @@ namespace Technoguyfication.Notpad.Net
 			{
 				queryClient.Close();
 				throw;
-			}
-		}
-
-		private User GetUser(Guid id)
-		{
-			if (_users.ContainsKey(id))
-			{
-				return _users[id];
-			}
-			else
-			{
-				return null;
 			}
 		}
 

@@ -239,7 +239,7 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 
         private void Debug(string message)
         {
-            OnDebugMessage?.Invoke(this, message);
+            OnDebugMessage?.Invoke(this, message); 
         }
     }
 
