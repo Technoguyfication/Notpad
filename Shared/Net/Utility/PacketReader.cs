@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Technoguyfication.Notpad.Shared.Types;
 
 namespace Technoguyfication.Notpad.Shared.Net.Utility
 {

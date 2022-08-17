@@ -15,16 +15,52 @@ namespace Technoguyfication.Notpad
 	{
 		internal ClientUser Client { get; }
 
+#if DEBUG
+		private DebugForm _debugForm;
+#endif
+
 		public MainForm()
 		{
 			Client = new ClientUser();
 
 			InitializeComponent();
+
+#if DEBUG
+			_debugForm = new DebugForm(this);
+
+			var debugMenuItem = new ToolStripMenuItem()
+			{
+				Text = "Open Debug Menu"
+			};
+
+			debugMenuItem.Click += (s, a) =>
+			{
+				_debugForm.Show();
+			};
+
+			fileToolStripMenuItem.DropDownItems.Add(debugMenuItem);
+#endif
 		}
 
 		private void connectToolStripMenuItem_Click(object sender, EventArgs e)
 		{
-			new ConnectForm().ShowDialog();
+			new ConnectForm(this).ShowDialog();
+		}
+
+		private void MainForm_Shown(object sender, EventArgs e)
+		{
+			Program.Log("Main form shown");
+
+#if DEBUG
+			_debugForm.Show();
+#endif
+		}
+
+		private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+		{
+#if DEBUG
+			_debugForm?.Close();
+#endif
 		}
 	}
 }

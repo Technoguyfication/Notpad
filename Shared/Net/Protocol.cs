@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
+using Technoguyfication.Notpad.Shared.Types;
 
 namespace Technoguyfication.Notpad.Shared.Net
 {

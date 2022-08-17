@@ -16,8 +16,10 @@ namespace Technoguyfication.Notpad
 	{
 		private MainForm _mainForm;
 
-		public ConnectForm()
+		public ConnectForm(MainForm mainForm)
 		{
+			_mainForm = mainForm;
+
 			InitializeComponent();
 		}
 

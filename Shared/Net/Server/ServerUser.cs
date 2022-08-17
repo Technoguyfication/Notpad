@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Technoguyfication.Notpad.Shared.Net.Packets;
+using Technoguyfication.Notpad.Shared.Types;
 
 namespace Technoguyfication.Notpad.Shared.Net.Server
 {

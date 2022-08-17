@@ -4,22 +4,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Technoguyfication.Notpad.Shared.Net.Utility;
-using Technoguyfication.Notpad.Shared.Types;
 
 namespace Technoguyfication.Notpad.Shared.Net.Packets
 {
-    [NetworkPacket(PacketId.CUserJoined)]
-	public class CUserJoinedPacket : Packet
+	[NetworkPacket(PacketId.SMessage)]
+	public class SMessagePacket : Packet
 	{
-		public User NewUser { get => _newUser; set => _newUser = value; }
-		private User _newUser;
+		public string Content { get => _content; set => _content = value; }
+		private string _content;
 
 		public override void Deserialize(byte[] bytes)
 		{
 			using var reader = new PacketReader(bytes);
 
 			reader
-				.ReadUser(out _newUser);
+				.ReadString(out _content);
 		}
 
 		public override byte[] Serialize()
@@ -27,7 +26,7 @@ namespace Technoguyfication.Notpad.Shared.Net.Packets
 			using var writer = new PacketWriter();
 
 			return writer
-				.WriteUser(_newUser)
+				.WriteString(_content)
 				.ToArray();
 		}
 	}

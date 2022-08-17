@@ -29,9 +29,9 @@ namespace Technoguyfication.Notpad
 		/// </summary>
 		private void InitializeComponent()
 		{
-			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
 			this.mainMenuStrip = new System.Windows.Forms.MenuStrip();
 			this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.connectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.formatToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -40,10 +40,9 @@ namespace Technoguyfication.Notpad
 			this.mainStatusStrip = new System.Windows.Forms.StatusStrip();
 			this.mainStatusStripFloatRightLabel = new System.Windows.Forms.ToolStripStatusLabel();
 			this.mainStatusStripConnectionLabel = new System.Windows.Forms.ToolStripStatusLabel();
-			this.mainStatusStripZoomLabel = new System.Windows.Forms.ToolStripStatusLabel();
+			this.mainStatusStripOnlineLabel = new System.Windows.Forms.ToolStripStatusLabel();
 			this.mainStatusStripExtraLabel = new System.Windows.Forms.ToolStripStatusLabel();
 			this.mainStatusStripExtra2Label = new System.Windows.Forms.ToolStripStatusLabel();
-			this.connectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.mainMenuStrip.SuspendLayout();
 			this.mainStatusStrip.SuspendLayout();
 			this.SuspendLayout();
@@ -72,6 +71,13 @@ namespace Technoguyfication.Notpad
 			this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
 			this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 18);
 			this.fileToolStripMenuItem.Text = "&File";
+			// 
+			// connectToolStripMenuItem
+			// 
+			this.connectToolStripMenuItem.Name = "connectToolStripMenuItem";
+			this.connectToolStripMenuItem.Size = new System.Drawing.Size(128, 22);
+			this.connectToolStripMenuItem.Text = "&Connect...";
+			this.connectToolStripMenuItem.Click += new System.EventHandler(this.connectToolStripMenuItem_Click);
 			// 
 			// editToolStripMenuItem
 			// 
@@ -110,14 +116,13 @@ namespace Technoguyfication.Notpad
 			this.textBox1.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
 			this.textBox1.Size = new System.Drawing.Size(800, 406);
 			this.textBox1.TabIndex = 1;
-			this.textBox1.Text = resources.GetString("textBox1.Text");
 			// 
 			// mainStatusStrip
 			// 
 			this.mainStatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mainStatusStripFloatRightLabel,
             this.mainStatusStripConnectionLabel,
-            this.mainStatusStripZoomLabel,
+            this.mainStatusStripOnlineLabel,
             this.mainStatusStripExtraLabel,
             this.mainStatusStripExtra2Label});
 			this.mainStatusStrip.Location = new System.Drawing.Point(0, 428);
@@ -142,14 +147,14 @@ namespace Technoguyfication.Notpad
 			this.mainStatusStripConnectionLabel.Text = "Disconnected";
 			this.mainStatusStripConnectionLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 			// 
-			// mainStatusStripZoomLabel
+			// mainStatusStripOnlineLabel
 			// 
-			this.mainStatusStripZoomLabel.AutoSize = false;
-			this.mainStatusStripZoomLabel.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Right;
-			this.mainStatusStripZoomLabel.Name = "mainStatusStripZoomLabel";
-			this.mainStatusStripZoomLabel.Size = new System.Drawing.Size(50, 17);
-			this.mainStatusStripZoomLabel.Text = "100%";
-			this.mainStatusStripZoomLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+			this.mainStatusStripOnlineLabel.AutoSize = false;
+			this.mainStatusStripOnlineLabel.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Right;
+			this.mainStatusStripOnlineLabel.Name = "mainStatusStripOnlineLabel";
+			this.mainStatusStripOnlineLabel.Size = new System.Drawing.Size(50, 17);
+			this.mainStatusStripOnlineLabel.Text = "0 / 0";
+			this.mainStatusStripOnlineLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 			// 
 			// mainStatusStripExtraLabel
 			// 
@@ -168,13 +173,6 @@ namespace Technoguyfication.Notpad
 			this.mainStatusStripExtra2Label.Text = "UTF-8 with BOM";
 			this.mainStatusStripExtra2Label.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 			// 
-			// connectToolStripMenuItem
-			// 
-			this.connectToolStripMenuItem.Name = "connectToolStripMenuItem";
-			this.connectToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-			this.connectToolStripMenuItem.Text = "&Connect...";
-			this.connectToolStripMenuItem.Click += new System.EventHandler(this.connectToolStripMenuItem_Click);
-			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -186,6 +184,8 @@ namespace Technoguyfication.Notpad
 			this.MainMenuStrip = this.mainMenuStrip;
 			this.Name = "MainForm";
 			this.Text = "Notpad";
+			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
+			this.Shown += new System.EventHandler(this.MainForm_Shown);
 			this.mainMenuStrip.ResumeLayout(false);
 			this.mainMenuStrip.PerformLayout();
 			this.mainStatusStrip.ResumeLayout(false);
@@ -207,7 +207,7 @@ namespace Technoguyfication.Notpad
 		private System.Windows.Forms.StatusStrip mainStatusStrip;
 		private System.Windows.Forms.ToolStripStatusLabel mainStatusStripFloatRightLabel;
 		private System.Windows.Forms.ToolStripStatusLabel mainStatusStripConnectionLabel;
-		private System.Windows.Forms.ToolStripStatusLabel mainStatusStripZoomLabel;
+		private System.Windows.Forms.ToolStripStatusLabel mainStatusStripOnlineLabel;
 		private System.Windows.Forms.ToolStripStatusLabel mainStatusStripExtraLabel;
 		private System.Windows.Forms.ToolStripStatusLabel mainStatusStripExtra2Label;
 		private System.Windows.Forms.ToolStripMenuItem connectToolStripMenuItem;

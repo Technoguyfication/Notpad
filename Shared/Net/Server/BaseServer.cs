@@ -8,11 +8,11 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Technoguyfication.Notpad.Shared.Net.Packets;
-using Technoguyfication.Notpad.Shared.Net.Structs;
+using Technoguyfication.Notpad.Shared.Types;
 
 namespace Technoguyfication.Notpad.Shared.Net.Server
 {
-	public class BaseServer
+    public class BaseServer
 	{
 		public string ServerName { get; protected set; }
 		public string MOTD { get; protected set; }

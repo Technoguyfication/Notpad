@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Technoguyfication.Notpad.Shared.Net;
 using Technoguyfication.Notpad.Shared.Net.Packets;
-using Technoguyfication.Notpad.Shared.Net.Structs;
+using Technoguyfication.Notpad.Shared.Types;
 
 namespace Technoguyfication.Notpad.Net
 {
@@ -19,12 +19,15 @@ namespace Technoguyfication.Notpad.Net
 		public event EventHandler OnConnected;
 
 		private NetworkClient _client;
+		private readonly Dictionary<Guid, User> _users;
 
 		private bool _disconnecting = false;
 
-		public ClientUser()
+		public ClientUser(Guid id) : base(id)
 		{
 			Status = ClientStatus.Disconnected;
+
+			_users = new Dictionary<Guid, User>();
 		}
 
 		/// <summary>
@@ -83,6 +86,7 @@ namespace Technoguyfication.Notpad.Net
 
 					// client has successfully logged in
 					Status = ClientStatus.Connected;
+					OnConnected?.Invoke(this, null);
 
 					// we're done for now. add additional post-login logic here if needed
 					return (true, null);
@@ -127,6 +131,27 @@ namespace Technoguyfication.Notpad.Net
 			_client?.Close();
 
 			Status = ClientStatus.Disconnected;
+		}
+
+		/// <summary>
+		/// Sends a message to the server
+		/// </summary>
+		/// <param name="content">Text content to send as message body</param>
+		/// <returns></returns>
+		/// <exception cref="InvalidOperationException">Thrown if the client is not in the proper state to send messages</exception>
+		/// <exception cref="IOException">Thrown if the connection is dropped while the operation is completing</exception>
+		public async Task SendMessage(string content)
+		{
+			if (Status != ClientStatus.Connected) throw new InvalidOperationException("Client must be connected to send messages");
+
+			// this method will primarily be called from ui threads so it's easier to make it non-blocking to begin with
+			await Task.Run(() =>
+			{
+				_client.WritePacket(new SMessagePacket()
+				{
+					Content = content
+				});
+			});
 		}
 
 		public override void SetUsername(string username)
@@ -190,6 +215,18 @@ namespace Technoguyfication.Notpad.Net
 			{
 				queryClient.Close();
 				throw;
+			}
+		}
+
+		private User GetUser(Guid id)
+		{
+			if (_users.ContainsKey(id))
+			{
+				return _users[id];
+			}
+			else
+			{
+				return null;
 			}
 		}
 
