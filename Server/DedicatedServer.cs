@@ -7,7 +7,7 @@ using Technoguyfication.Notpad.Shared.Net.Server;
 
 namespace Technoguyfication.Notpad.Dedicated
 {
-    class DedicatedServer : BaseServer
+    class DedicatedServer : BaseServerImplementation
     {
         public DedicatedServer(string name, string motd, int maxUsers)
         {

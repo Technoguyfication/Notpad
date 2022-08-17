@@ -28,6 +28,32 @@ namespace Technoguyfication.Notpad.Shared.Net.Utility
             _stream.Dispose();
         }
 
+        public delegate PacketReader ReadFunc<T>(out T value);
+
+        /// <summary>
+        /// Reads an array of elements from the data
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value"></param>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        public PacketReader ReadArray<T>(out T[] value, ReadFunc<T> reader)
+        {
+            // read length of array
+            ReadInt32(out var length);
+            
+            // initialize new array
+            value = new T[length];
+
+            // call the reader function length times and store each result into it's respective index
+            for (int i = 0; i < length; i++)
+            {
+                reader(out value[i]);
+            }
+
+            return this;
+        }
+
         public PacketReader ReadString(out string value)
         {
             // read string length and string data

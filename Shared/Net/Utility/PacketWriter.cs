@@ -37,6 +37,29 @@ namespace Technoguyfication.Notpad.Shared.Net.Utility
             _stream.Dispose();
         }
 
+        public delegate PacketWriter WriteFunc<T>(T value);
+
+        /// <summary>
+        /// Writes an array of any value using it's write function
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value"></param>
+        /// <param name="writer"></param>
+        /// <returns></returns>
+        public PacketWriter WriteArray<T>(T[] value, WriteFunc<T> writer)
+        {
+            // write length
+            WriteInt32(value.Length);
+
+            // write length amount of values
+            for (int i = 0; i < value.Length; i++)
+            {
+                writer(value[i]);
+            }
+
+            return this;
+        }
+
         public PacketWriter WriteString(string value)
         {
             // get string as bytes

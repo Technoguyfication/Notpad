@@ -10,6 +10,11 @@ namespace Technoguyfication.Notpad.Shared.Types
     {
         public abstract void SetUsername(string username);
 
+        public NetworkedUser()
+        {
+
+        }
+
         public NetworkedUser(Guid id) : base(id)
         {
 

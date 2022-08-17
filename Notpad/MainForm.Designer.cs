@@ -77,7 +77,7 @@ namespace Technoguyfication.Notpad
 			this.connectToolStripMenuItem.Name = "connectToolStripMenuItem";
 			this.connectToolStripMenuItem.Size = new System.Drawing.Size(128, 22);
 			this.connectToolStripMenuItem.Text = "&Connect...";
-			this.connectToolStripMenuItem.Click += new System.EventHandler(this.connectToolStripMenuItem_Click);
+			this.connectToolStripMenuItem.Click += new System.EventHandler(this.ConnectToolStripMenuItem_Click);
 			// 
 			// editToolStripMenuItem
 			// 

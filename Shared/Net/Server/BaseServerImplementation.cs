@@ -12,12 +12,19 @@ using Technoguyfication.Notpad.Shared.Types;
 
 namespace Technoguyfication.Notpad.Shared.Net.Server
 {
-    public class BaseServer
+	public class BaseServerImplementation
 	{
 		public string ServerName { get; protected set; }
 		public string MOTD { get; protected set; }
 		public int MaxUsers { get; protected set; }
-		public int UsersOnline => _users.Where(c => c.Status == ClientStatus.Ready || c.Status == ClientStatus.Login).Count();
+		public int UsersOnline => _users.Where(c => c.Status == ClientStatus.Ready).Count();
+
+		/// <summary>
+		/// An enumerator that enumerates through all users
+		/// </summary>
+		public IReadOnlyCollection<RemoteUser> Users => _users.AsReadOnly();
+
+		public Guid ID { get; }
 
 		public ServerInfo ServerInfo
 		{
@@ -42,21 +49,26 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 		public event EventHandler<string> OnDebugMessage;
 
 		// user-based events
-		public event EventHandler<ServerUser> OnUserJoin;
-		public event EventHandler<ServerUser> OnUserLogin;
-		public event EventHandler<ServerUser> OnUserDisconnect;
+		public event EventHandler<RemoteUser> OnUserJoin;
+		public event EventHandler<RemoteUser> OnUserLogin;
+		public event EventHandler<RemoteUser> OnUserDisconnect;
+		public event EventHandler<Message> OnUserMessage;
 
 		private TcpListener _listener;
 		private UdpClient _udpClient;
-		private readonly List<ServerUser> _users;
+		private readonly List<RemoteUser> _users;
+		private ServerUser _serverUser;
 
 		private bool _stopping = false;
 		private readonly object _stoppingLock = new();
 		private bool _started = false;
 
-		protected BaseServer()
+		protected BaseServerImplementation(Guid id)
 		{
-			_users = new List<ServerUser>();
+			ID = id;
+
+			_serverUser = new ServerUser(ID);
+			_users = new List<RemoteUser>();
 		}
 
 		public void Start(int port, IPAddress bindAddress)
@@ -112,19 +124,15 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 				_stopping = true;
 			}
 
-			// gracefully disconnect all users if this is not a forceful shutdown
-			if (!force)
+			OnDebugMessage?.Invoke(this, $"Disconnecting {_users.Count} users...");
+
+			// disconnect all users
+			while (_users.Count > 0)
 			{
-				OnDebugMessage?.Invoke(this, $"Disconnecting {_users.Count} users...");
+				var user = _users.First();
 
-				// disconnect all users
-				while (_users.Count > 0)
-				{
-					var user = _users.First();
-
-					// disconnecting the user removes them from the user list
-					user.Disconnect("Server Closing", false);
-				}
+				// disconnecting the user removes them from the user list
+				user.Disconnect("Server Closing", force);
 			}
 
 			// stop listeners if they exist
@@ -132,6 +140,44 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 			_listener?.Stop();
 
 			OnStopped?.Invoke(this, null);
+		}
+
+		/// <summary>
+		/// Broadcasts a message to all users
+		/// </summary>
+		/// <param name="message"></param>
+		public void BroadcastMessage(Message message)
+		{
+			var onlineUsers = GetOnlineUsers();
+
+			foreach (var user in onlineUsers)
+			{
+				user.SendMessage(message);
+			}
+		}
+
+		/// <summary>
+		/// Broadcasts a server message to all users
+		/// </summary>
+		/// <param name="content"></param>
+		public void BroadcastServerMessage(string content)
+		{
+			var message = new Message(_serverUser, content);
+			BroadcastMessage(message);
+		}
+
+		/// <summary>
+		/// Sends a raw packet to all users
+		/// </summary>
+		/// <param name="packet"></param>
+		public void BroadcastPacket(Packet packet)
+		{
+			var onlineUsers = GetOnlineUsers();
+
+			foreach (var user in onlineUsers)
+			{
+				user.SendPacket(packet);
+			}
 		}
 
 		/// <summary>
@@ -171,23 +217,6 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 			return (true, null);
 		}
 
-		private void User_OnDisconnect(object sender, EventArgs e)
-		{
-			var user = sender as ServerUser;
-
-			Debug($"{user} is disconnecting");
-
-			// todo: send all users disconnect message
-
-			// fire user disconnect event
-			OnUserDisconnect?.Invoke(this, user);
-
-			// remove user from users list
-			_users.Remove(user);
-
-			Debug($"{user} fully disconnected");
-		}
-
 		/// <summary>
 		/// Adds a new user from a network client.
 		/// To be used after the client has sent a handshake packet
@@ -202,13 +231,16 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 			// so we upgrade this client into a User and the User's internal packet handler will
 			// handle the login process
 
-			var user = new ServerUser(client, this);
+			var user = new RemoteUser(client, this);
 
 			// add user to the server's collection of users
 			_users.Add(user);
 
 			// subscribe to events
+			user.OnDebugMessage += User_OnDebugMessage;
 			user.OnDisconnect += User_OnDisconnect;
+			user.OnLogin += User_OnLogin;
+			user.OnMessage += User_OnMessage;
 
 			// fire join event
 			OnUserJoin?.Invoke(this, user);
@@ -217,6 +249,64 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
 			// this starts it's own listener task and it will begin reading packets from the
 			// network asynchronously
 			user.Initialize();
+		}
+
+		private void User_OnDebugMessage(object sender, string message)
+		{
+			OnDebugMessage?.Invoke(this, message);
+		}
+
+		private void User_OnMessage(object sender, Message message)
+		{
+			Debug($"Message from {message.Author}: {message.Content}");
+
+			// invoke message event
+			OnUserMessage?.Invoke(this, message);
+
+			// broadcast this message to all other users
+			BroadcastMessage(message);
+		}
+
+		private void User_OnDisconnect(object sender, EventArgs e)
+		{
+			var user = sender as RemoteUser;
+
+			Debug($"{user} is disconnecting");
+
+			// send a user disconnect packet to all other users
+			BroadcastPacket(new CUserDisconnectedPacket()
+			{
+				UserID = user.ID
+			});
+
+			// fire user disconnect event
+			OnUserDisconnect?.Invoke(this, user);
+
+			// remove user from users list
+			_users.Remove(user);
+
+			Debug($"{user} fully disconnected");
+		}
+
+		private void User_OnLogin(object sender, EventArgs e)
+		{
+			var user = sender as RemoteUser;
+
+			Debug($"User {user} logged in");
+
+			// broadcast user join packet
+			BroadcastPacket(new CUserJoinedPacket()
+			{
+				NewUser = user
+			});
+
+			// fire user login event
+			OnUserLogin?.Invoke(this, user);
+		}
+
+		private IEnumerable<RemoteUser> GetOnlineUsers()
+		{
+			return _users.Where(u => u.Status == ClientStatus.Ready);
 		}
 
 		private async Task NewClientListener()

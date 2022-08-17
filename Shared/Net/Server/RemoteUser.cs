@@ -13,19 +13,23 @@ using Technoguyfication.Notpad.Shared.Types;
 
 namespace Technoguyfication.Notpad.Shared.Net.Server
 {
-    public class ServerUser : NetworkedUser
+    public class RemoteUser : NetworkedUser
     {
         public IPEndPoint RemoteEndPoint => _networkClient?.Client?.RemoteEndPoint as IPEndPoint;
         public ClientStatus Status { get; private set; }
 
-		public event EventHandler OnLogin;
+        public event EventHandler<string> OnDebugMessage;
+        
+        public event EventHandler OnLogin;
 		public event EventHandler OnDisconnect;
+
+        public event EventHandler<Message> OnMessage;
 
         private bool _disconnecting = false;
         private readonly object _disconnectLock = new();
 
         private readonly NetworkClient _networkClient;
-		private readonly BaseServer _server;
+		private readonly BaseServerImplementation _server;
 
 		private readonly ConcurrentQueue<Packet> _packetQueue;
 
@@ -33,7 +37,7 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
         /// Instantiate an instance of the TCP client
         /// </summary>
         /// <param name="client"></param>
-        public ServerUser(NetworkClient client, BaseServer server)
+        public RemoteUser(NetworkClient client, BaseServerImplementation server)
         {
             Status = ClientStatus.Uninitialized;
             
@@ -80,11 +84,40 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
             }
 
             // todo: heartbeats
+
+            // todo: login timeout - user must send a login packet n seconds after a handshake
         }
 
+        /// <summary>
+        /// Sets the username of the client, not implemented
+        /// </summary>
+        /// <param name="username"></param>
+        /// <exception cref="NotImplementedException"></exception>
         public override void SetUsername(string username)
         {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Sends a message to the client
+        /// </summary>
+        /// <param name="message"></param>
+        public void SendMessage(Message message)
+        {
+            _networkClient.WritePacket(new CMessagePacket()
+            {
+                AuthorID = message.Author.ID,
+                Content = message.Content
+            });
+        }
+
+        /// <summary>
+        /// Used for sending packets that are not handled by another method
+        /// </summary>
+        /// <param name="packet"></param>
+        public void SendPacket(Packet packet)
+        {
+            _networkClient.WritePacket(packet);
         }
 
         /// <summary>
@@ -129,9 +162,21 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
                     Packet_Login(loginPacket);
                     break;
 
+                case SMessagePacket messagePacket:
+                    Packet_Message(messagePacket);
+                    break;
+
                 default:
                     throw new NotImplementedException($"Unable to handle packet of type {packet.GetType().Name}");
             }
+        }
+
+        private void Packet_Message(SMessagePacket messagePacket)
+        {
+            // turn packet data into a message
+            var message = new Message(this, messagePacket.Content);
+
+            OnMessage?.Invoke(this, message);
         }
 
         private void Packet_Login(SLoginPacket packet)
@@ -145,6 +190,9 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
                 return;
             }
 
+            // set user id
+            ID = packet.UserID;
+
             // user is logged in
             Status = ClientStatus.Ready;
 
@@ -155,6 +203,16 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
              * use this broadcasted packet as confirmation that it has joined successfully.
              * */
             OnLogin?.Invoke(this, null);
+
+            // send the user list to this user
+            var onlineUsers = _server.Users.Where(u => u.Status == ClientStatus.Ready).ToArray();
+
+            Debug($"Sending user list of {onlineUsers.Length} users to {this}");
+
+            _networkClient.WritePacket(new CUserListPacket()
+            {
+                Users = onlineUsers
+            });
         }
 
         private async Task Worker_NetworkRead()
@@ -177,6 +235,11 @@ namespace Technoguyfication.Notpad.Shared.Net.Server
                     _packetQueue.Enqueue(packet);
                 }
             });
+        }
+
+        private void Debug(string message)
+        {
+            OnDebugMessage?.Invoke(this, message);
         }
     }
 

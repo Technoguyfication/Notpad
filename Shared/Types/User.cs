@@ -10,7 +10,12 @@ namespace Technoguyfication.Notpad.Shared.Types
     {
         public string Username { get; protected set; }
 
-        public Guid ID { get; }
+        public Guid ID { get; protected set; }
+
+        public User()
+        {
+            // empty user constructor
+        }
 
         public User(Guid id)
         {

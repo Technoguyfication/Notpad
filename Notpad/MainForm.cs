@@ -21,7 +21,7 @@ namespace Technoguyfication.Notpad
 
 		public MainForm()
 		{
-			Client = new ClientUser();
+			Client = new ClientUser(Guid.NewGuid());
 
 			InitializeComponent();
 
@@ -42,7 +42,7 @@ namespace Technoguyfication.Notpad
 #endif
 		}
 
-		private void connectToolStripMenuItem_Click(object sender, EventArgs e)
+		private void ConnectToolStripMenuItem_Click(object sender, EventArgs e)
 		{
 			new ConnectForm(this).ShowDialog();
 		}

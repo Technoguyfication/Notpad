@@ -8,22 +8,18 @@ using Technoguyfication.Notpad.Shared.Types;
 
 namespace Technoguyfication.Notpad.Shared.Net.Packets
 {
-	[NetworkPacket(PacketId.CMessage)]
-	public class CMessagePacket : Packet
+    [NetworkPacket(PacketId.CUserDisconnected)]
+	public class CUserDisconnectedPacket : Packet
 	{
-		public Guid AuthorID { get => _authorId; set => _authorId = value; }
-		private Guid _authorId;
-
-		public string Content { get => _content; set => _content = value; }
-		private string _content;
+		public Guid UserID { get => _userId; set => _userId = value; }
+		private Guid _userId;
 
 		public override void Deserialize(byte[] bytes)
 		{
 			using var reader = new PacketReader(bytes);
 
 			reader
-				.ReadGuid(out _authorId)
-				.ReadString(out _content);
+				.ReadGuid(out _userId);
 		}
 
 		public override byte[] Serialize()
@@ -31,8 +27,7 @@ namespace Technoguyfication.Notpad.Shared.Net.Packets
 			using var writer = new PacketWriter();
 
 			return writer
-				.WriteGuid(_authorId)
-				.WriteString(_content)
+				.WriteGuid(_userId)
 				.ToArray();
 		}
 	}
